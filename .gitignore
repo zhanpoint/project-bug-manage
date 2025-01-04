@@ -1,0 +1,5 @@
+# 忽略本地配置文件
+local_settings.py
+
+# 忽略所有的.sqlite文件，以防止数据库文件被版本控制
+*.sqlite
