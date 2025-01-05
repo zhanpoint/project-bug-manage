@@ -55,8 +55,7 @@ ROOT_URLCONF = 'Bug_manage.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
-        ,
+        'DIRS': [BASE_DIR,  '/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -120,6 +119,18 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# 访问阿里云api接口的秘钥
+ALIBABA_CLOUD_ACCESS_KEY_ID = ''
+ALIBABA_CLOUD_ACCESS_KEY_SECRET = ''
+
+# 发送短信的签名和模版ID
+ALIYUN_SMS_SIGN = "sass平台"
+ALIYUN_SMS_TEMPLATE = {
+    "register": "SMS_474810651",
+    "login": "SMS_474835623",
+    "reset_password": "SMS_474835624"
+}
 
 try:
     from .local_settings import *
