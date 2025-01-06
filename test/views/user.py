@@ -2,7 +2,7 @@ import random
 from Bug_manage import settings
 from utils.aliyun import Sample
 from django.shortcuts import render, HttpResponse
-from .myforms import RegisterModelForm
+from test.myforms import RegisterModelForm
 
 
 def register(request):
@@ -13,7 +13,7 @@ def register(request):
     else:
         form = RegisterModelForm()
 
-    return render(request, 'test/register.html', {'form': form})
+    return render(request, 'test/templates/test/register.html', {'form': form})
 
 
 def send_sms(request):
