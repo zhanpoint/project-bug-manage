@@ -1,7 +1,19 @@
 import random
-from django.shortcuts import render, HttpResponse
-from utils.aliyun import Sample
 from Bug_manage import settings
+from utils.aliyun import Sample
+from django.shortcuts import render, HttpResponse
+from .myforms import RegisterModelForm
+
+
+def register(request):
+    if request.method == 'POST':
+        form = RegisterModelForm(request.POST)
+        if form.is_valid():
+            pass
+    else:
+        form = RegisterModelForm()
+
+    return render(request, 'register.html', {'form': form})
 
 
 def send_sms(request):

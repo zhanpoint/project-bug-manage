@@ -15,7 +15,6 @@ import os
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
@@ -26,7 +25,6 @@ SECRET_KEY = 'qmt1o$jmdw!s+)8yf8e&eeyq0mm-e@9xvuix0_)(i8a(#%66_8'
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -55,7 +53,7 @@ ROOT_URLCONF = 'Bug_manage.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR,  '/templates'],
+        'DIRS': [BASE_DIR, '/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -70,7 +68,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'Bug_manage.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
@@ -80,7 +77,6 @@ DATABASES = {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -100,7 +96,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
 
@@ -114,11 +109,17 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
+# 定义了静态文件的URL前缀,所有静态文件都通过这个前缀访问
 STATIC_URL = '/static/'
+
+# 定义静态文件目录,默认是项目根目录下的static目录
+# 这些目录通常用于存放项目级别的静态文件，而不是应用级别的静态文件。
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static")
+]
 
 # 访问阿里云api接口的秘钥
 ALIBABA_CLOUD_ACCESS_KEY_ID = ''
@@ -131,6 +132,7 @@ ALIYUN_SMS_TEMPLATE = {
     "login": "SMS_474835623",
     "reset_password": "SMS_474835624"
 }
+
 
 try:
     from .local_settings import *

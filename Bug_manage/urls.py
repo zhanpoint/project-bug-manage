@@ -20,4 +20,5 @@ from app01 import views
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^sms/', views.send_sms),
+    url(r'^register/', views.register),
 ]
