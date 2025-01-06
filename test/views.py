@@ -13,7 +13,7 @@ def register(request):
     else:
         form = RegisterModelForm()
 
-    return render(request, 'register.html', {'form': form})
+    return render(request, 'test/register.html', {'form': form})
 
 
 def send_sms(request):
