@@ -2,7 +2,7 @@ import random
 from Bug_manage import settings
 from utils.aliyun import Sample
 from django.shortcuts import render, HttpResponse
-from test.myforms import RegisterModelForm
+from test.forms.register import RegisterModelForm
 
 
 def register(request):
@@ -25,6 +25,7 @@ def send_sms(request):
         return HttpResponse("该模版不存在")
     code = random.randrange(100000, 999999)
     response = Sample.main('17837038625', template_id, "{'code': '%s'}" % code)
+    print(response)
     if response.body.code == 'OK':
         return HttpResponse("成功发送短信")
     else:

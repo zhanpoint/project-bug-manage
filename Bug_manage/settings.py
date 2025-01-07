@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+import redis
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -100,7 +101,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'zh-hans'
 
 TIME_ZONE = 'UTC'
 
@@ -127,7 +128,8 @@ ALIBABA_CLOUD_ACCESS_KEY_ID = ''
 ALIBABA_CLOUD_ACCESS_KEY_SECRET = ''
 
 # 发送短信的签名和模版ID
-ALIYUN_SMS_SIGN = "sass平台"
+ALIYUN_SMS_SIGN1 = "sass平台"
+ALIYUN_SMS_SIGN2 = "BugTracer平台"
 ALIYUN_SMS_TEMPLATE = {
     "register": "SMS_474810651",
     "login": "SMS_474835623",

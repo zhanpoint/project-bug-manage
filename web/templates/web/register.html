@@ -1,1 +1,126 @@
 {% extends "templates/base/entrance.html" %}
+{% load static %}
+
+{% block title %}注册{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'web/css/entrance.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="entrance">
+        <div class="title">用户注册</div>
+        <form method="get" novalidate>
+            <!-- 用于保护表单提交的安全性，防止跨站请求伪造攻击-->
+            {% csrf_token %}
+            {% for field in form %}
+                {% if field.name == "code" %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        <!-- clearfix用于解决浮动元素导致的父元素高度塌陷问题 -->
+                        <div class="row">
+                            <div class="col-xs-6">
+                                {{ field }}
+                                <span class="error-msg"></span>
+                            </div>
+                            <div class="col-xs-6">
+                                <button type="button" class="btn btn-default" id="sms_code">获取验证码</button>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="form-group">
+                        <!--将label标签与表单字段关联起来，当点击label标签时浏览器自动聚焦到对应的输入框，方便用户输入内容-->
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        <!--用于显示错误信息-->
+                        <span class="error-msg"></span>
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <!--row会自动处理内部列的浮动问题,它会为子元素（列）提供适当的负外边距，使得列可以水平居中并且不会超出父容器。-->
+            <div class="row">
+                <div class="col-xs-1">
+                    <button type="submit" class="btn btn-success">注册</button>
+                </div>
+
+            </div>
+
+        </form>
+    </div>
+
+{% endblock %}
+
+{% block js %}
+    <script>
+        // 当DOM文档即HTML页面加载完成后自动执行的匿名函数
+        $(function () {
+            click_sms_code();
+        })
+
+        // 为‘获取验证码’按钮绑定点击事件
+        function click_sms_code() {
+            $('#sms_code').click(function () {
+                // 在每次重新获取验证码时都清空错误信息
+                $('.error-msg').empty();
+
+                // 获取手机号表单字段的值
+                const phone = $('#id_phone').val();
+
+                // 验证手机号格式
+                // const reg = /^1[3456789]\d{9}$/;
+                // 判断手机号是否为空（严格相等比较符：值和类型都必须完全相同）
+                // if (phone === '') {
+                //     alert('手机号不能为空');
+                // }
+                // 判断手机号格式是否正确
+                // else if (!reg.test(phone)) {
+                //     alert('手机号格式不正确');
+                // } else {
+                // 发送ajax请求
+                $.ajax({
+                    url: "{% url 'web:sms' %}",  // 通过路由名称+地址空间反向解析获取路由地址
+                    type: 'GET',  // 请求方式
+                    data: {
+                        'phone': phone,
+                        'tpl': 'register'
+                    },
+                    dataType: 'JSON',  // 预期服务器返回的数据类型
+                    success: function (data) {  // 请求成功后的回调函数,data为服务器返回的数据
+                        if (data.status) {  // 短信验证码发送成功
+                            codeTimeDown();
+                        } else {
+                            // $.each(遍历对象，当前元素的索引（或键）和值。)
+                            $.each(data.error, function (key, value) {
+                                $("#id_" + key).next().text(value[0]);
+                            })
+                        }
+                    }
+                })
+                // }
+            })
+        }
+
+        function codeTimeDown() {
+            let code = $('#sms_code');
+            // 在验证码按钮上显示倒计时时禁止点击
+            code.prop('disabled', true);
+            let time = 60;
+            // setInterval()方法于设置一个定时器，按照指定的时间间隔（以毫秒为单位）重复执行某个函数。
+            let timer = setInterval(function () {
+                // text() - 设置或返回所选元素的文本内容
+                // html() - 设置或返回所选元素的内容（包括 HTML 标记）
+                // val() - 设置或返回表单字段（input，select等）的值
+                // button标签并不属于表单字段，所以不能使用val()方法
+                code.text(time + '秒后重新发送');
+                time = time - 1;
+                if (time === 0) {
+                    // 清除定时器
+                    clearInterval(timer);
+                    code.text('点击获取验证码').prop('disabled', false);
+                }
+            }, 1000)
+        }
+    </script>
+{% endblock %}
+

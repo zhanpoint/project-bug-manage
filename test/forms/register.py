@@ -1,5 +1,5 @@
 from django import forms
-from . import models
+from test import models
 from django.core.validators import RegexValidator  # 正则验证类（第一个参数：正则表达式，第二个参数：格式错误提示内容）
 from django.core.exceptions import ValidationError  # 验证错误信息
 
@@ -21,6 +21,6 @@ class RegisterModelForm(forms.ModelForm):
     code = forms.CharField(label='验证码', widget=forms.TextInput())
 
     class Meta:
-        model = models.Register  # 指定需要关联的模型
+        model = models.UserInfo  # 指定需要关联的模型
         # fields = "__all__"  # 指定所有字段
         fields = ["username", "password", "confirm_password", "phone", "code"]  # 指定需要校验的字段及其顺序
