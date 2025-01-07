@@ -2,7 +2,7 @@ import random
 from Bug_manage import settings
 from utils.aliyun import Sample
 from django.shortcuts import render, HttpResponse
-from test.myforms import RegisterModelForm
+from test.forms.register import RegisterModelForm
 
 
 def register(request):

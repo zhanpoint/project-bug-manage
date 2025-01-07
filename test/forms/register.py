@@ -1,5 +1,5 @@
 from django import forms
-from . import models
+from test import models
 from django.core.validators import RegexValidator  # 正则验证类（第一个参数：正则表达式，第二个参数：格式错误提示内容）
 from django.core.exceptions import ValidationError  # 验证错误信息
 
