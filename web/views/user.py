@@ -1,7 +1,7 @@
-from django.shortcuts import render, HttpResponse
-from web.forms.register import RegisterModelForm
 from web.forms import sms_code
 from django.http import JsonResponse
+from django.shortcuts import render
+from web.forms.register import RegisterModelForm
 
 
 def register(request):
