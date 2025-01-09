@@ -18,10 +18,11 @@ class SmsCodeForm(forms.Form):
 
         # 2.判断该手机号是否存在与数据库中以及短信模版是否有问题
         is_exist = models.UserInfo.objects.filter(phone=phone).exists()
+
         tpl = self.data.get('tpl')
         templates_id = settings.ALIYUN_SMS_TEMPLATE.get(tpl)
         if not templates_id:
-            raise ValidationError("短信模版错误")
+            raise ValidationError("短信模版不存在")
         else:
             if tpl == 'login' and not is_exist:
                 raise ValidationError("手机号不存在")
@@ -40,3 +41,4 @@ class SmsCodeForm(forms.Form):
         conn.set(phone, code, ex=60)
 
         return phone
+
