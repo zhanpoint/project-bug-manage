@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 
 import os
 import redis
+import django_redis
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -48,6 +49,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'web.middleware.all_mw.AllMiddleWare'
 ]
 
 ROOT_URLCONF = 'Bug_manage.urls'
@@ -73,16 +75,52 @@ WSGI_APPLICATION = 'Bug_manage.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
+# django项目配置数据库
+from .local_settings import mysql_password
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    },
+    # Django需要通过MySQLdb模块与MySQL数据库进行交互，而这个模块在Windows环境下通常由mysqlclient库提供(记得安装)
+    'db1': {
+        'ENGINE': 'django.db.backends.mysql',
+        'HOST': 'localhost',
+        'PORT': '3306',
+        'NAME': 'django',
+        'USER': 'root',
+        'PASSWORD': mysql_password,
     }
 }
 
+# django项目配置缓存
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {'max_connections': 1000},
+            'PASSWORD': '333444',
+        }
+    }
+}
+# 注意：如果是基于数据库的会话存储，只能使用数据库配置中的名为’default‘数据库
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'  # 如果你使用的是基于缓存的会话存储，这将选择要使用的缓存。
+
+SESSION_COOKIE_NAME = "sessionid"  # 会话cookie的名称，默认值为sessionid
+SESSION_COOKIE_PATH = "/"  # 这个路径决定了浏览器在哪些 URL 路径下发送该会话 cookie。默认情况下值为 '/'，意味着会话cookie将被发送到站点下的所有路径。
+SESSION_COOKIE_DOMAIN = None  # Session的cookie保存的域名
+SESSION_COOKIE_SECURE = False  # 是否支持Https传输cookie
+SESSION_COOKIE_HTTPONLY = True  # 是否只支持Http传输cookie
+SESSION_COOKIE_AGE = 1209600  # Session的cookie失效日期（默认2周）
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # 是否关闭浏览器使得Session过期
+SESSION_SAVE_EVERY_REQUEST = False  # 是否每次请求都保存Session，默认修改之后才保存
+
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -135,7 +173,6 @@ ALIYUN_SMS_TEMPLATE = {
     "login": "SMS_474835623",
     "reset_password": "SMS_474835624"
 }
-
 
 try:
     from .local_settings import *

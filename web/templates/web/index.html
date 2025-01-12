@@ -1,0 +1,20 @@
+{% extends 'templates/base/entrance.html' %}
+{% load static %}
+
+{% block title %} 主页 {% endblock %}
+{% block css %}
+    <style>
+        .small {
+            width: 100%;  /* 设置元素的宽度为父容器的100%，使得该元素占据其父容器的全部宽度 */
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div>
+        <img src="{% static 'web/img/index/index-1.png' %}" class="small">
+        <img src="{% static 'web/img/index/index-2.png' %}" class="small">
+        <img src="{% static 'web/img/index/index-3.png' %}" class="small">
+        <img src="{% static 'web/img/index/index-4.png' %}" class="small">
+    </div>
+{% endblock %}

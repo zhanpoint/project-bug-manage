@@ -1,0 +1,76 @@
+{% extends "templates/base/entrance.html" %}
+{% load static %}
+
+{% block title %}用户名登录{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'web/css/entrance.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="entrance">
+        <div class="title">用户名登录</div>
+        <form method="POST" novalidate>
+            <!-- 用于保护表单提交的安全性，防止跨站请求伪造攻击-->
+            {% csrf_token %}
+            {% for field in form %}
+                {% if field.name == "code" %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        <!-- clearfix用于解决浮动元素导致的父元素高度塌陷问题 -->
+                        <div class="row">
+                            <div class="col-xs-6">
+                                {{ field }}
+                                <!--field.errors包含该字段所有验证错误的列表（实际上是ErrorList对象）。每个错误信息都是一个字符串-->
+                                <!--Django模板语言支持通过点号访问列表或字典中的元素 -->
+                                <!--通常情况下，显示第一个错误信息已经足够提示用户进行修正-->
+                                <span class="error-msg">{{ field.errors.0 }}</span>
+                            </div>
+                            <div class="col-xs-6">
+                                <img src="{% url 'web:image_code' %}" title='点击更换图片验证码' id="image_code">
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="float: right">
+                            <a href="{% url 'web:login_sms' %}">短信登录</a>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="form-group">
+                        <!--将label标签与表单字段关联起来，当点击label标签时浏览器自动聚焦到对应的输入框，方便用户输入内容-->
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        <!--用于显示错误信息-->
+                        <span class="error-msg">{{ field.errors.0 }}</span>
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <!--row会自动处理内部列的浮动问题,它会为子元素（列）提供适当的负外边距，使得列可以水平居中并且不会超出父容器。-->
+            <div class="row">
+                <div class="col-xs-1">
+                    <!--如果用submit则当点击注册按钮失败时，会自动更新整个页面则验证码倒计时就失效了，
+                    我们希望当注册失败时只更新页面的某些字段的错误信息因此用普通按钮通过Ajax提交数据到服务器-->
+                    <button type="submit" class="btn btn-success" id="login_btn">登录</button>
+                </div>
+
+            </div>
+
+        </form>
+    </div>
+
+{% endblock %}
+{% block js %}
+    <script>
+        $("#image_code").click(function () {
+            // 当浏览器输入两次相同的网址时，第二次的处理方式取决于多个因素：
+            //    0.对于GET请求，浏览器更倾向于使用缓存；而对于POST等请求，浏览器通常不使用缓存（也会使用）。如果用户通过强制刷新（刷新按钮/Ctrl + F5）浏览器会忽略缓存并重新发起请求。
+            //    1.检查缓存：浏览器首先检查本地缓存中是否存在该网址对应的资源，并且这些资源是否在有效期内。
+            //    2.如果缓存中的资源存在且未过期，浏览器会使用本地缓存的资源
+            //    3.如果缓存中的资源不存在或者过期，浏览器会向服务器发送请求，如果浏览器会返回304状态码，并使用本地缓存的资源。否则，浏览器会返回200状态码，并更新缓存显示新内容。
+            // 通在并过附加一个随机数作为查询参数，防止浏览器缓存返回相同的图片对象
+            $(this).attr("src", "{% url 'web:image_code' %}" + "?random=" + Math.random());
+        })
+    </script>
+{% endblock %}
+

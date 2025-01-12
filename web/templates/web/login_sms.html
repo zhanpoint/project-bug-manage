@@ -1,7 +1,7 @@
 {% extends "templates/base/entrance.html" %}
 {% load static %}
 
-{% block title %}用户注册{% endblock %}
+{% block title %}用户短信登录{% endblock %}
 
 {% block css %}
     <link rel="stylesheet" href="{% static 'web/css/entrance.css' %}">
@@ -9,8 +9,8 @@
 
 {% block content %}
     <div class="entrance">
-        <div class="title">用户注册</div>
-        <form id="register_form" method="get" novalidate>
+        <div class="title">用户短信登录</div>
+        <form id="login_form" method="get" novalidate>
             <!-- 用于保护表单提交的安全性，防止跨站请求伪造攻击-->
             {% csrf_token %}
             {% for field in form %}
@@ -28,6 +28,11 @@
                             </div>
                         </div>
                     </div>
+                    <div>
+                        <div style="float: right">
+                            <a href="{% url 'web:login_name' %}">用户名登录</a>
+                        </div>
+                    </div>
                 {% else %}
                     <div class="form-group">
                         <!--将label标签与表单字段关联起来，当点击label标签时浏览器自动聚焦到对应的输入框，方便用户输入内容-->
@@ -43,7 +48,7 @@
                 <div class="col-xs-1">
                     <!--如果用submit则当点击注册按钮失败时，会自动更新整个页面则验证码倒计时就失效了，
                     我们希望当注册失败时只更新页面的某些字段的错误信息因此用普通按钮通过Ajax提交数据到服务器-->
-                    <button type="button" class="btn btn-success" id="register_btn">注册</button>
+                    <button type="button" class="btn btn-success" id="login_btn">登录</button>
                 </div>
 
             </div>
@@ -58,7 +63,7 @@
         // 当DOM文档即HTML页面加载完成后自动执行的匿名函数
         $(function () {
             click_sms_code();
-            click_register_btn();
+            click_login_btn();
         })
 
         // 为‘获取验证码’按钮绑定点击事件
@@ -74,7 +79,7 @@
                     type: 'GET',  // 请求方式
                     data: {
                         'phone': phone,
-                        'tpl': 'register'
+                        'tpl': 'login'
                     },
                     dataType: 'JSON',  // 预期服务器返回的数据类型
                     success: function (data) {  // 请求成功后的回调函数,data为服务器返回的数据
@@ -112,18 +117,18 @@
             }, 1000)
         }
 
-        function click_register_btn() {
-            $('#register_btn').click(function () {
+        function click_login_btn() {
+            $('#login_btn').click(function () {
                 $('.error-msg').empty();
                 // 收集表单中所有字段的数据并提交到服务器
                 $.ajax({
-                    url: "{% url 'web:register' %}",
+                    url: "{% url 'web:login_sms' %}",
                     type: "POST",
-                    data: $('#register_form').serialize(),  //序列化表单数据返回一个键值对(字段名name：字段值)
+                    data: $('#login_form').serialize(),  //序列化表单数据返回一个键值对(字段名name：字段值)
                     dataType: "JSON",
                     success: function (data) {
                         if (data.status) {
-                            // 表单所有字段校验成功，将浏览器的当前页面重定向到登录页面
+                            // 表单所有字段校验成功，将浏览器的当前页面重定向到主页
                             window.location.href = data.url;
                         } else {
                             // 表单校验失败，显示错误信息
