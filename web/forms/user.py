@@ -16,6 +16,7 @@ class SmsCodeForm(forms.Form):
 
     def clean_phone(self):  # 对通过phone字段钩子函数进行清洗
         # self.cleaned_data 是一个字典，包含所有通过验证的表单字段及其值。
+        # !!!
         phone = self.cleaned_data.get('phone')
 
         # 2.判断该手机号是否存在与数据库中以及短信模版是否有问题
