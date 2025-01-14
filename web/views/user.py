@@ -1,3 +1,5 @@
+import datetime
+
 from django.http import JsonResponse  # 一般发送Ajax请求时返回JSONResponse
 from django.shortcuts import render, HttpResponse, redirect
 from web.forms.user import RegisterModelForm, LoginNameForm, LoginSmsForm, SmsCodeForm
@@ -10,7 +12,21 @@ def register(request):  # 用户注册
         form = RegisterModelForm(data=request.POST)
         if form.is_valid():
             # form.instance获取当前表单对应的模型实例, 然后调用save方法(会自动剔除Model中没有的字段)保存到数据库中
-            form.instance.save()
+            # 获取表单实例但不保存到数据库
+            user_obj = form.save(commit=False)
+            # 在获取到的实例上设置所需的字段值
+            user_obj.member_level = models.MemberLevel.objects.filter(category=1).first()
+            # 将修改后的实例保存到数据库
+            user_obj.save()
+
+            # 注册时为用户生成初始化交易记录
+            models.TransactionRecord.objects.create(
+                status=2,
+                user=user_obj,
+                amount=0.00,
+                transaction_begin=datetime.datetime.now(),
+            )
+
             # 在 Django 中，URL 路径通常以斜杠 / 开头，表示这是一个绝对路径。如果缺少斜杠，Django 可能会将其视为相对路径
             # 在 Django 中，URL 路径通常以斜杠 / 结尾，表示这是一个目录路径。如果缺少斜杠，Django 可能会将其视为文件路径
             return JsonResponse({"status": True, 'url': '/web/login/name/'})

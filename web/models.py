@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 
 
@@ -7,13 +9,14 @@ class UserInfo(models.Model):
     phone = models.CharField(verbose_name='手机号', max_length=11)
     # SHA-256加密后的密码哈希值长度为64个字符（十六进制表示），所以密码字段的长度最大为64
     password = models.CharField(verbose_name='密码', max_length=64)
+    member_level = models.ForeignKey(verbose_name='会员等级', to='MemberLevel', on_delete=models.CASCADE, )
 
 
 # 会员等级表
 class MemberLevel(models.Model):
-    category_choice = [(1, '普通用户'), (2, 'VIP会员'), (3, 'SVIP会员')]
+    category_choice = [(1, '普通用户'), (2, 'VIP会员'), (3, 'SVIP会员   ')]
     # choices属性用于定义字段的可选值。通常是一个包含元组的列表，每个元组的第一个元素是存储在数据库中的值，第二个元素是其对应的中文描述（普通用户、VIP会员、SVIP会员）
-    category = models.SmallIntegerField(verbose_name='会员等级', choices=category_choice, default=1)
+    category = models.SmallIntegerField(unique=True, verbose_name='会员等级', choices=category_choice, default=1)
     name = models.CharField(verbose_name='会员等级名称', max_length=10)
     # 价格字段值不能为负数
     price = models.DecimalField(verbose_name='价格', max_digits=10, decimal_places=2)
@@ -25,21 +28,24 @@ class MemberLevel(models.Model):
 
 # 交易记录表
 class TransactionRecord(models.Model):
+    # class Meta:  # 指定一个或多个字段名（以逗号分隔）。Django 将在默认排序时按顺序使用这些字段，以确定最新的记录。
+    #     get_latest_by = 'id'
     status_choice = [(1, '未支付'), (2, '已支付'), (3, '处理中')]
     TRANSACTION_TYPES = [
         ('deposit', '存款'),
         ('withdrawal', '取款'),
         ('transfer', '转账'),
     ]
-    # UUIDField用于生成全局唯一的标识符,所以可作为主键使用
-    transaction_id = models.UUIDField(primary_key=True)
+    # Django不会自动将非空且不唯一的字段设置为主键
+    orderID = models.UUIDField(default=uuid.uuid4, editable=False, primary_key=False)
     status = models.SmallIntegerField(verbose_name='交易状态', choices=status_choice)
     # 当用户表记录被删除时，所有关联的交易表记录也会被自动删除。反之，删除交易表记录不会影响用户表记录。
     user = models.ForeignKey(verbose_name='用户', to='UserInfo', on_delete=models.CASCADE)
     amount = models.DecimalField(verbose_name='交易金额', max_digits=10, decimal_places=2)
     # 当用户为普通用户时，默认其会员结束时间为None即无限期
-    transaction_date = models.DateTimeField(verbose_name='交易开始时间', auto_now_add=True)
-    transaction_deadline = models.DateTimeField(verbose_name='交易结束时间', null=True)
+    transaction_begin = models.DateTimeField(verbose_name='订单实际支付时间', null=True, blank=True)
+    transaction_end = models.DateTimeField(verbose_name='会员实际结束时间', null=True, blank=True)
+    # transaction_create = models.DateTimeField(verbose_name='订单创建时间', auto_now_add=True)
 
 
 # 项目表
@@ -63,5 +69,3 @@ class ProjectMember(models.Model):
     member = models.ForeignKey(verbose_name='成员', to='UserInfo', on_delete=models.CASCADE, related_name='member')
     inviter = models.ForeignKey(verbose_name='邀请人', to='UserInfo', on_delete=models.CASCADE, related_name='inviter')
     member_join_time = models.DateTimeField(verbose_name='成员加入时间', auto_now_add=True)
-
-

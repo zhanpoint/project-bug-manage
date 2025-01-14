@@ -61,6 +61,7 @@ class RegisterModelForm(BootstrapForm, forms.ModelForm):
     class Meta:
         model = models.UserInfo
         # fields = "__all__"
+        # 不允许member_level字段自动生成表单
         fields = ['username', 'password', 'confirm_password', 'phone', 'code']
 
     def clean_username(self):

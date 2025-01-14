@@ -49,7 +49,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'web.middleware.all_mw.AllMiddleWare'
+    'web.middleware.web_middleware.AllMiddleWare'
 ]
 
 ROOT_URLCONF = 'Bug_manage.urls'
@@ -173,6 +173,19 @@ ALIYUN_SMS_TEMPLATE = {
     "login": "SMS_474835623",
     "reset_password": "SMS_474835624"
 }
+
+# 用户登录时访问web应用中URL的白名单
+prefix = '/web/'
+WEB_WHITE_LIST = [
+
+    'register/',
+    'login/sms',
+    'login/name/',
+    'imagecode/',
+    'sms/',
+    'index/'
+]
+WEB_WHITE_LIST = [prefix + i for i in WEB_WHITE_LIST]
 
 try:
     from .local_settings import *
