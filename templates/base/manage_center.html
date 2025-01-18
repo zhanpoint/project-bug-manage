@@ -1,14 +1,16 @@
 {% load static %}
+{% load my_tags %}  <!--导入自定义的模版标签片段-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>用户项目管理中心</title>
     {% block title %}{% endblock %}
+
     <link rel="stylesheet" href="{% static "bootstrap-3.4.1/css/bootstrap.min.css" %}"/>
     <link rel="stylesheet" href="{% static "font-awesome-4.7.0/css/font-awesome.min.css" %}"/>
-    <link rel="stylesheet" href="{% static "web/css/manage_center.css" %}"/>
-
+    <!--由于该模版文件是项目级别的，所以其必须引入项目级别的全局css样式-->
+    <link rel="stylesheet" href="{% static "css/manage_center.css" %}"/>
     {% block css %}{% endblock %}
 </head>
 <body>
@@ -40,14 +42,11 @@
 
         <div class="collapse navbar-collapse" id="fold_content">
             <ul class="nav navbar-nav">
-                <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button">项目</a>
-                    <ul class="dropdown-menu">
-                        <li><a href="#">Action</a></li>
-                        <li role="separator" class="divider"></li>
-                        <li><a href="#">Separated link</a></li>
-                    </ul>
-                </li>
+                {% navigate_project_list request %}
+
+                {% if request.bugtracer.project %}
+                    {% project_manage_menu request %}
+                {% endif %}
             </ul>
             <ul class="nav navbar-nav navbar-right">
                 <li><a href="#">工作台</a></li>

@@ -1,13 +1,222 @@
 {% extends 'templates/base/manage_center.html' %}
+{% load static %}
 {% block css %}
-    <style>
-        .creat_project{
-            margin-top: 100px;
-        }
-    </style>
-{% endblock %} #}
+    <link rel="stylesheet" href="{% static 'web/css/project.css' %}">
+{% endblock %}
 {% block content %}
     <div class="container-fluid creat_project">
-        <a class="btn btn-primary"><i class="fa fa-plus" aria-hidden="true"></i>新建项目</a>
+        <!-- 点击按钮触发指定id的模态框 -->
+        <div style="margin-bottom: 30px; margin-top: 90px">
+            <a class="btn btn-primary" data-toggle="modal" data-target="#new_project">
+                <i class="fa fa-plus" aria-hidden="true"></i>
+                新建项目
+            </a>
+        </div>
+
+        <!-- 模态框 -->
+        <div class="modal fade" id="new_project" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myModalLabel">创建项目</h4>
+                    </div>
+                    <!-- 使用自定义的ModelForm生成模态框主体 -->
+                    <div class="modal-body">
+                        <form id="new_project_form" method="post" novalidate>
+                            <!-- 用于保护表单提交的安全性，防止跨站请求伪造攻击-->
+                            {% csrf_token %}
+                            {% for field in form %}
+                                <div class="form-group">
+                                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    {{ field }}
+                                    <span class="error-msg"></span>
+                                </div>
+                            {% endfor %}
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <!--data-dismiss="modal"点击按钮关闭模态框-->
+                        <button type="button" class="btn btn-default" data-dismiss="modal">返回</button>
+                        <!--由于模态框需要在不刷新整个页面的情况下进行内容更新且防止页面刷新后模态框消失，所以需要用AJAX提交数据 -->
+                        <button type="button" class="btn btn-primary" id="save_btn">保存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 项目分类面板 -->
+        <div class="panel panel-warning">
+            <div class="panel-heading"><i class="fa fa-star" aria-hidden="true"></i>星标项目</div>
+            <div class="panel-body">
+                {% for item in project_dict.star %}
+                    <div class="item">
+                        <!--点击项目需要刷新整个页面，因此不需要Ajax-->
+                        <a href="{% url 'web:dashboard' project_id=item.project_obj.id %}" class="title"
+                           style="background-color: {{ item.project_obj.get_project_color_display }};">
+                            {{ item.project_obj.project_name }}
+                        </a>
+                        <div class="info">
+                            <div>
+                                <i id="{{ item.project_obj.project_name }}cancelstar" class="fa fa-star"
+                                   data-project_type="{{ item.origin }}"
+                                   data-project_id='{{ item.project_obj.id }}'
+                                   aria-hidden="true" style="color: #FFA500"></i>
+                                <span>{{ item.project_obj.leader.username }}</span>
+                            </div>
+                            <div>
+                                <i class="fa fa-user-o" aria-hidden="true"></i>
+                                <span>{{ item.project_obj.join_number }}</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="panel panel-success">
+            <div class="panel-heading"><i class="fa fa-list-ul" aria-hidden="true"></i>创建的项目</div>
+            <div class="panel-body">
+                {% for item in project_dict.create %}
+                    <div class="item">
+                        <!--模型字段使用了choices参数，通过模型实例的存储值get_FOO_display()方法来获取该字段的显示值-->
+                        <!--如果没有显式设置背景颜色，元素的背景将是透明的，显示其父元素或页面的背景-->
+                        <a href="{% url 'web:dashboard' project_id=item.id %}" class="title"
+                           style="background-color: {{ item.get_project_color_display }};">{{ item.project_name }}</a>
+                        <div class="info">
+                            <div>
+                                <!--注意每个已创建项目的i标签id值应该是不同的-->
+                                <i id="{{ item.project_name }}addstar" data-project_type="create"
+                                   data-project_id='{{ item.id }}'
+                                   class=" fa fa-star" aria-hidden="true" style="color: #d5d5d5"></i>
+                                <span>{{ item.leader.username }}</span>
+                            </div>
+                            <div>
+                                <i class="fa fa-user-o" aria-hidden="true"></i>
+                                <span>{{ item.join_number }}</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="panel panel-info">
+            <div class="panel-heading"><i class="fa fa-handshake-o" aria-hidden="true"></i>参与的项目</div>
+            <div class="panel-body">
+                {% for item in project_dict.join %}
+                    <div class="item">
+                        <a href="{% url 'web:dashboard' project_id=item.id %}" class="title"
+                           style="background-color: {{ item.value.get_project_color_display }};">
+                            {{ item.project_name }}
+                        </a>
+                        <div class="info">
+                            <div>
+                                <!--要想在django模版中使用表单变量必须使用{{ 变量名 }}的语法-->
+                                <i id="addstar" data-project_type="join" data-project_id='{{ item.id }}'
+                                   class="fa fa-star" aria-hidden="true" style="color: #d5d5d5"></i>
+                                <span>{{ item.leader.username }}</span>
+                            </div>
+                            <div>
+                                <i class="fa fa-user-o" aria-hidden="true"></i>
+                                <span>{{ item.join_number }}</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
     </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        // 当DOM文档即HTML页面加载完成后自动执行的匿名函数
+        $(function () {
+            click_save_btn();
+            click_addstar_btn();
+            click_cancelstar_btn();
+        })
+
+        function click_save_btn() {
+            $('#save_btn').click(function () {
+                $('.error-msg').empty();
+                $.ajax({
+                    url: "{% url 'web:project' %}",
+                    type: "POST",
+                    data: $('#new_project_form').serialize(),  //序列化表单数据返回一个键值对(字段名name：字段值)
+                    dataType: "JSON",
+                    success: function (data) {
+                        if (data.status) {
+                            // 表单所有字段校验成功，将浏览器的当前页面重定向到登录页面
+                            window.location.href = '{% url 'web:project' %}';
+                        } else {
+                            // 表单校验失败，显示错误信息
+                            $.each(data.error, function (key, value) {
+                                $("#id_" + key).next().text(value[0]);
+                            })
+                        }
+                    }
+                })
+            })
+        }
+
+        function click_addstar_btn() {
+            // jQuery的选择器函数$，用于选择所有id属性值以addstar结尾的DOM元素,并将它们封装为一个jQuery对象
+            var projectlist = $('[id$="addstar"]');
+            projectlist.each(function () {
+                $(this).click(function () {
+                    $.ajax(
+                        {
+                            url: "{% url 'web:project_addstar'%}",
+                            type: "GET",
+                            data: {
+                                // 不能直接在一个jQuery对象(使用$函数获取的对象)上调用原生JavaScript的方法getAttribute)(这两个方法是属于不同的对象和库的)。
+                                // 或者使用原生JavaScript的方法document.getElementById('yourElementId').getAttribute('id');
+                                project_type: $(this).attr('data-project_type'),
+                                project_id: $(this).attr('data-project_id'),
+                            },
+                            dataType: "JSON",
+                            success: function (data) {
+                                if (data.status) {
+                                    window.location.href = '{% url 'web:project' %}';
+                                } else {
+                                    alert('添加星标失败');
+                                }
+                            }
+                        }
+                    )
+                });
+            });
+        }
+
+        function click_cancelstar_btn() {
+            var projectlist = $('[id$="cancelstar"]');
+            projectlist.each(function () {
+                $(this).click(function () {
+                    $.ajax(
+                        {
+                            url: "{% url 'web:project_cancelstar'%}",
+                            type: "GET",
+                            data: {
+                                // 不能直接在一个jQuery对象(使用$函数获取的对象)上调用原生JavaScript的方法getAttribute)(这两个方法是属于不同的对象和库的)。
+                                // 或者使用原生JavaScript的方法document.getElementById('yourElementId').getAttribute('id');
+                                project_type: $(this).attr('data-project_type'),
+                                project_id: $(this).attr('data-project_id'),
+                            },
+                            dataType: "JSON",
+                            success: function (data) {
+                                if (data.status) {
+                                    window.location.href = '{% url 'web:project' %}';
+                                } else {
+                                    alert('添加星标失败');
+                                }
+                            }
+                        }
+                    )
+                });
+            });
+        }
+
+    </script>
 {% endblock %}

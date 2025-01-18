@@ -50,7 +50,7 @@ class TransactionRecord(models.Model):
 
 # 项目表
 class Project(models.Model):
-    color_choice = [(1, '红色'), (2, '橙色'), (3, '黄色'), (4, '绿色'), (5, '蓝色'), (6, '靛色'), (7, '紫色')]
+    color_choice = [(1, 'red'), (2, 'orange'), (3, 'yellow'), (4, 'green'), (5, 'blue'), (6, 'indigo'), (7, 'purple')]
     project_name = models.CharField(verbose_name='项目名称', max_length=10)
     # blank=True，则在表单提交时，该字段可以为空而不会引发验证错误
     project_desc = models.CharField(verbose_name='项目描述', max_length=100, null=True, blank=True)
@@ -62,10 +62,12 @@ class Project(models.Model):
     create_time = models.DateTimeField(verbose_name='创建时间', auto_now_add=True)
 
 
+# 项目成员表
 class ProjectMember(models.Model):
     project = models.ForeignKey(verbose_name='项目', to='Project', on_delete=models.CASCADE)
     # inviter和member字段都指向同一个模型，默认情况下它们会生成相同的反向访问器名称即‘模型名称_set’，导致冲突
     # 可以通过related_name参数来指定不同的访问器名称
     member = models.ForeignKey(verbose_name='成员', to='UserInfo', on_delete=models.CASCADE, related_name='member')
     inviter = models.ForeignKey(verbose_name='邀请人', to='UserInfo', on_delete=models.CASCADE, related_name='inviter')
+    star = models.BooleanField(verbose_name='该成员是否星标', default=False)
     member_join_time = models.DateTimeField(verbose_name='成员加入时间', auto_now_add=True)

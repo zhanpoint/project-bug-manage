@@ -1,0 +1,31 @@
+.navbar-default {
+    background-color: rgb(46, 54, 67); /* 导航栏背景颜色 */
+    border-color: #e7e7e7 /* 导航栏边框颜色 */
+}
+
+.navbar-default .navbar-brand { /* 导航栏品牌图标的文字颜色 */
+    color: rgb(255, 255, 255);
+    font-size: large;
+}
+
+/* 添加导航栏文字颜色样式 */
+.navbar-default .navbar-nav > li > a {
+    color: #FFFFFF; /* 设置默认文字颜色 */
+    font-size: medium;
+}
+
+.navbar-default .navbar-nav > li > a:hover,
+.navbar-default .navbar-nav > li > a:focus {
+    color: #EEEEEE; /* 设置悬停和聚焦时的文字颜色 */
+}
+
+.navbar-default .navbar-nav > li > a:active {
+    background-color: #CCCCCC; /* 设置激活时的背景颜色 */
+}
+
+.error-msg {
+    color: red;
+    position: absolute;
+    font-size: 12px;
+}
+

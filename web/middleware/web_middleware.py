@@ -55,3 +55,33 @@ class AllMiddleWare(MiddlewareMixin):
             # 如果会员过期了将该用户会员等级重置为普通用户
             request.bugtracer.member_level = models.MemberLevel.objects.filter(category=1).first()
         # 如果是普通用户或会员用户且没有过期，则继续使用之前的会员等级，无需修改
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        # 首先判断当前用户是否要进入项目管理页面,否则直接返回None(按正常流程继续走，交给下一个中间件处理)
+        # 切记不能返回view_func(request) 或 HttpResponse 对象，因为如果返回二者的话Django将不执行后续视图函数之前执行的方法中间件等
+        """
+        URL（统一资源定位符）通常由以下几个部分组成：
+            协议 (Scheme)：指定使用的网络协议，例如 http 或 https。
+            主机名 (Host)：可以是域名或IP地址，标识服务器的位置。
+            端口 (Port)：可选部分，默认情况下，HTTP使用80端口，HTTPS使用443端口。如果使用其他端口，则需要显式指定。
+            路径 (Path)：指定服务器上的资源路径，例如 /web/projectmanage/。
+            查询参数 (Query Parameters)：可选部分，用于传递额外的参数，格式为 ?key1=value1&key2=value2。
+            片段标识符 (Fragment Identifier)：可选部分，用于标识页面内的某个位置，以 # 开头。
+        """
+        # startswith指定是路径的前缀，而不是整个URL的前缀
+        if not request.path_info.startswith('/web/projectmanage/'):
+            return None
+        # 如果当前用户要进入项目管理页面，则取项目id，判断该用户创建或参与的项目中是否存在其要管理的项目，
+        project_id = view_kwargs.get('project_id')
+        project_obj = models.Project.objects.filter(id=project_id, leader=request.bugtracer.user).first()
+        if project_obj:
+            # 该要管理的项目是该用户创建项目，则记录该用户要管理的项目（按正常流程继续走，交给下一个中间件处理）
+            request.bugtracer.project = project_obj
+            return None
+        project_member_obj = models.ProjectMember.objects.filter(member=request.bugtracer.user,
+                                                                 project_id=project_id).first()
+        if project_member_obj:
+            # 该要管理的项目是该用户参与的项目，则记录该用户要管理的项目（按正常流程继续走，交给下一个中间件处理）
+            request.bugtracer.project = project_member_obj.project
+            return None
+        return redirect('https://fanyi.baidu.com')
