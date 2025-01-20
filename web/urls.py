@@ -1,5 +1,5 @@
 from django.conf.urls import url, include  # url方法只使用django1版本，django2.2+使用path和re_path
-from .views import user, homepage, project, projectmanage
+from .views import user, homepage, project, projectmanage, wiki
 
 urlpatterns = [
     # 用户认证相关
@@ -23,7 +23,11 @@ urlpatterns = [
         url(r'^dashboard/$', projectmanage.dashboard, name='dashboard'),
         url(r'^issue/$', projectmanage.issue, name='issue'),
         url(r'^statistic/$', projectmanage.statistic, name='statistic'),
-        url(r'^wiki/$', projectmanage.wiki, name='wiki'),
+        url(r'^wiki/$', wiki.wiki, name='wiki'),
+        url(r'^wiki/add/$', wiki.wiki_add, name='wiki_add'),
+        url(r'^wiki/edit/(?P<wiki_id>\d+)/$', wiki.wiki_edit, name='wiki_edit'),
+        url(r'^wiki/delete/(?P<wiki_id>\d+)/$', wiki.wiki_delete, name='wiki_delete'),
+        url(r'^wiki/cata_log/$', wiki.wiki_catalog, name='wiki_catalog'),
         url(r'^file/$', projectmanage.file, name='file'),
         url(r'^setting/$', projectmanage.setting, name='setting')
     ], None, None)),

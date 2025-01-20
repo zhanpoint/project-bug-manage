@@ -179,7 +179,7 @@ prefix = '/web/'
 WEB_WHITE_LIST = [
 
     'register/',
-    'login/sms',
+    'login/sms/',
     'login/name/',
     'imagecode/',
     'sms/',

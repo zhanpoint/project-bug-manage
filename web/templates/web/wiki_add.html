@@ -17,22 +17,6 @@
                        href="{% url 'web:wiki_add' project_id=request.bugtracer.project.id %}">
                         <i class="fa fa-plus-circle"></i>新建文档
                     </a>
-                    {% if wiki_obj %}
-                        <a type="button"
-                           class="btn btn-info btn-sm"
-                           href="{% url 'web:wiki_edit' project_id=request.bugtracer.project.id wiki_id=wiki_obj.id %}">
-                            <i class="fa fa-edit"></i>编辑文档
-                        </a>
-                        <a type="button"
-                           class="btn btn-danger btn-sm"
-                           href="{% url 'web:wiki_delete' project_id=request.bugtracer.project.id wiki_id=wiki_obj.id %}">
-                            <i class="fa fa-trash"></i>删除文档
-                        </a>
-                    {% endif %}
-                    {#                    通过弹出框中删除文档#}
-                    {#                    <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#confirmDeleteModal">#}
-                    {#                        <i class="fa fa-trash"></i>删除文档#}
-                    {#                    </button>#}
                 </div>
             </div>
             <div class="panel-body">
@@ -42,15 +26,19 @@
                     </ul>
                 </div>
                 <div class="col-md-10 content">
-                    {% if wiki_obj %}
-                        {{ wiki_obj.content }}
-                    {% else %}
-                        <h4>《{{ request.bugtracer.project.project_name }}》文档库</h4>
-                        <a href="{% url 'web:wiki_add' project_id=request.bugtracer.project.id %}">
-                            <i class="fa fa-plus-circle"></i>新建文档
-                        </a>
-                    {% endif %}
-
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="form-group">
+                                <!--模板渲染时，Django会根据表单字段自动生成唯一的ID,格式为id_<field_name>-->
+                                <!--label标签的for属性与input标签的id属性保持一致，这样点击label标签就可以选中对应的input标签--->
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                                <span class="error-msg">{{ field.errors.0 }}</span>
+                            </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -79,7 +67,6 @@
                             const li = $("<li>").attr("id", 'id_' + item.id).append($('<a>').text(item.title).attr('href', href)).append($('<ul>'));
                             if (item.father_id) {
                                 // 在父级li标签的子元素ul标签中添加子级li标签
-                                // 当父级li标签删除时，子级标签由于找不到
                                 $("#id_" + item.father_id).children("ul").append(li)
                             } else {
                                 // 在根目录下中添加li标签

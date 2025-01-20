@@ -9,7 +9,8 @@ register = template.Library()
 def navigate_project_list(request):
     create_project_list = models.Project.objects.filter(leader=request.bugtracer.user)
     join_project_list = models.ProjectMember.objects.filter(member=request.bugtracer.user)
-    return {'create': create_project_list, 'join': join_project_list}
+    # 不要忘记向 inclusion_tag 传递request等参数
+    return {'create': create_project_list, 'join': join_project_list, 'request': request}
 
 
 @register.inclusion_tag('inclusion_tag/project_manage_menu.html')

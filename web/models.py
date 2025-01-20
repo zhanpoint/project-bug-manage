@@ -71,3 +71,23 @@ class ProjectMember(models.Model):
     inviter = models.ForeignKey(verbose_name='邀请人', to='UserInfo', on_delete=models.CASCADE, related_name='inviter')
     star = models.BooleanField(verbose_name='该成员是否星标', default=False)
     member_join_time = models.DateTimeField(verbose_name='成员加入时间', auto_now_add=True)
+
+
+# wiki项目文档表
+class Wiki(models.Model):
+    title = models.CharField(verbose_name='标题', max_length=16)
+    content = models.TextField(verbose_name='内容', null=True, blank=True)
+    project = models.ForeignKey(verbose_name='项目', to='Project', on_delete=models.CASCADE)
+    # 在进行自关联时，Django会自动为该字段添加一个related_name属性，默认值为模型名称的小写加下划线_set。
+    # 在进行自关联时，to属性可以为self或者当前模型名，表示自关联。
+    # 如果一个模型的多个外键指向同一个模型，用related_name可以指定从被关联模型反向查询时使用的名称，避免反向关系名称冲突。
+    # 由于使用了级联删除，当父文档被删除时，其子文档也会被删除。
+    father_id = models.ForeignKey(verbose_name='父文档', to='self', on_delete=models.CASCADE, related_name='children',
+                                  null=True, blank=True)
+    # 由于当用户编辑文档时（例如修改当前<id值更小>的文档的父文档为<id值更大>的文档）可能会导致父文档由于id值更大而出现在当前修改文档的后面以至于
+    # 当$("#id_" + item.father_id)而查找不到父文档id，因此需要添加深度字段，使文档数据能够按照层级关系进行排列，其次才是id值
+    depth = models.PositiveIntegerField(verbose_name='文档层级', default=0)
+
+    # __str__方法当输出或打印对象时通常返回一个描述对象状态的字符串。
+    def __str__(self):
+        return self.title
