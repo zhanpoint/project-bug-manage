@@ -2,6 +2,8 @@
 {% load static %}
 {% block css %}
     <link rel="stylesheet" href="{% static 'web/css/wiki.css' %}"/>
+    <!--引入编辑器插件样式--->
+    <link rel="stylesheet" href="{% static 'plugin/editor.md-master/css/editormd.min.css' %}"/>
 {% endblock %}
 {% block content %}
     <div class="container-fluid">
@@ -29,13 +31,24 @@
                     <form method="post" novalidate>
                         {% csrf_token %}
                         {% for field in form %}
-                            <div class="form-group">
-                                <!--模板渲染时，Django会根据表单字段自动生成唯一的ID,格式为id_<field_name>-->
-                                <!--label标签的for属性与input标签的id属性保持一致，这样点击label标签就可以选中对应的input标签--->
-                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                                {{ field }}
-                                <span class="error-msg">{{ field.errors.0 }}</span>
-                            </div>
+                            {% if field.name != 'content' %}
+                                <div class="form-group">
+                                    <!--模板渲染时，Django会根据表单字段自动生成唯一的ID,格式为id_<field_name>-->
+                                    <!--label标签的for属性与input标签的id属性保持一致，这样点击label标签就可以选中对应的input标签--->
+                                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    {{ field }}
+                                    <span class="error-msg">{{ field.errors.0 }}</span>
+                                </div>
+                            {% else %}
+                                <div class="form-group">
+                                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    <div id="editormd">
+                                        {{ field }}
+                                    </div>
+                                    <span class="error-msg">{{ field.errors.0 }}</span>
+                                </div>
+                            {% endif %}
+
                         {% endfor %}
                         <button type="submit" class="btn btn-primary">保存</button>
                     </form>
@@ -45,11 +58,14 @@
     </div>
 {% endblock %}
 {% block js %}
+    <!--引入编辑器插件功能--->
+    <script src="{% static 'plugin/editor.md-master/editormd.min.js' %}"></script>
     <script>
         // 获取项目文档详细内容的路径
         const wiki_detail_url = "{% url 'web:wiki' project_id=request.bugtracer.project.id %}";
         $(function () {
             initCatalog();  // 当body加载完成之后自动执行函数
+            initEditorMd();  // 初始化编辑器插件
         })
 
         function initCatalog() {
@@ -78,6 +94,16 @@
                     }
                 }
             })
+        }
+
+        function initEditorMd() {
+            editormd("editormd", {
+                placeholder: "请输入内容",
+                width: "100%",
+                height: 640,
+                // 引用Editor.md插件所需的静态资源文件的路径，默认是当前路径下的lib文件夹
+                path: "{% static 'plugin/editor-md/lib/' %}",
+            });
         }
     </script>
 {% endblock %}

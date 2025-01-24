@@ -2,6 +2,7 @@
 {% load static %}
 {% block css %}
     <link rel="stylesheet" href="{% static 'web/css/wiki.css' %}"/>
+    <link rel="stylesheet" href="{% static 'plugin/editor.md-master/css/editormd.preview.min.css' %}"/>
 {% endblock %}
 {% block content %}
     <div class="container-fluid">
@@ -43,7 +44,14 @@
                 </div>
                 <div class="col-md-10 content">
                     {% if wiki_obj %}
-                        {{ wiki_obj.content }}
+                        <div id="preview_editor">
+                            <!--据HTML规范，每个表单输入元素都应该有一个关联的 <label>，以提高可访问性和用户体验。
+                            缺少 <label> 可能导致屏幕阅读器等辅助工具无法正确识别和描述该输入框。-->
+                            <label for="wiki_content">文档内容:</label>
+                            <textarea id="wiki_content">
+                                {{ wiki_obj.content}}
+                            </textarea>
+                        </div>
                     {% else %}
                         <h4>《{{ request.bugtracer.project.project_name }}》文档库</h4>
                         <a href="{% url 'web:wiki_add' project_id=request.bugtracer.project.id %}">
@@ -58,10 +66,35 @@
 {% endblock %}
 {% block js %}
     <script>
+        /*
+      核心库
+          editormd.min.js：Editor.md 的主库文件，提供Markdown编辑器的主要功能。
+      依赖库
+          marked.min.js：用于解析和渲染Markdown文本。
+          prettify.min.js：用于语法高亮显示代码块。
+          raphael.min.js：用于绘制矢量图形，支持图表和图示生成。
+          underscore.min.js：提供函数式编程的支持工具。
+          sequence-diagram.min.js：用于生成序列图。
+          flowchart.min.js：用于生成流程图。
+          jquery.flowchart.min.js：基于jQuery的流程图插件，增强Editor.md的图表功能。
+
+      */
+    </script>
+    <script src="{% static 'plugin/editor.md-master/editormd.min.js' %}"></script>
+    <script src="{% static 'plugin/editor.md-master/lib/marked.min.js' %}"></script>
+    <script src="{% static 'plugin/editor.md-master/lib/prettify.min.js' %}"></script>
+        <script src="{% static 'plugin/editor.md-master/lib/raphael.min.js' %}"></script>
+    <script src="{% static 'plugin/editor.md-master/lib/underscore.min.js' %}"></script>
+    <script src="{% static 'plugin/editor.md-master/lib/sequence-diagram.min.js' %}"></script>
+    <script src="{% static 'plugin/editor.md-master/lib/flowchart.min.js' %}"></script>
+    <script src="{% static 'plugin/editor.md-master/lib/jquery.flowchart.min.js' %}"></script>
+
+    <script>
         // 获取项目文档详细内容的路径
         const wiki_detail_url = "{% url 'web:wiki' project_id=request.bugtracer.project.id %}";
         $(function () {
             initCatalog();  // 当body加载完成之后自动执行函数
+            initPreviewMarkdown();  // 初始化编辑器插件
         })
 
         function initCatalog() {
@@ -91,6 +124,18 @@
                     }
                 }
             })
+        }
+
+        function initPreviewMarkdown() {
+            // 将Markdown文本解析为HTML并渲染到指定元素中
+            editormd.markdownToHTML("preview_editor", {
+                // 默认情况下，Markdown 渲染器会将 HTML 标签作为普通文本处理，而不会解析为 HTML 元素。
+                // htmlDecode 的值是一个字符串，包含你希望解析的 HTML 标签名，多个标签名之间用逗号分隔
+                // style：允许解析和渲染内联样式或 <style> 标签内的 CSS 样式。
+                // script：允许解析和渲染 JavaScript 代码块。需要注意的是，启用此选项可能会带来安全风险（如 XSS 攻击），因此应谨慎使用。
+                // iframe：允许解析和渲染嵌入的内容（如视频、地图等）。同样，这也可能带来安全风险
+                htmlDecode: "style, script, iframe"
+            });
         }
     </script>
 {% endblock %}

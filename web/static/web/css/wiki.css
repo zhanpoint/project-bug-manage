@@ -22,7 +22,8 @@
 .panel-body {
     padding-top: 0;
 }
-.panel-body .content{
+
+.panel-body .content {
     padding-top: 30px;
     text-align: center;
 }
@@ -40,4 +41,10 @@
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+}
+
+.editormd-fullscreen {
+    /*确保 .editormd-fullscreen 类的元素具有较高的堆叠顺序，从而避免被其他元素遮挡。*/
+    /*z-index 只对定位元素（即 position 属性值为 relative, absolute, fixed, 或 sticky）有效。*/
+    z-index: 1001;
 }
