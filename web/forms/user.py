@@ -5,7 +5,7 @@ from django.core.validators import RegexValidator  # 正则验证类（第一个
 from django.core.exceptions import ValidationError  # 验证错误信息
 from django.conf import settings
 import random
-from utils.aliyun import Sample
+from utils.aliyun.sms import Sample
 from utils.encrypt import sha_256
 import redis
 

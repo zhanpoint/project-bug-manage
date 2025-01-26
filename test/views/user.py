@@ -1,6 +1,6 @@
 import random
 from Bug_manage import settings
-from utils.aliyun import Sample
+from utils.aliyun.sms import Sample
 from django.shortcuts import render, HttpResponse
 from test.forms.register import RegisterModelForm
 
