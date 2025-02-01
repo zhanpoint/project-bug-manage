@@ -1,5 +1,5 @@
 from django.conf.urls import url, include  # url方法只使用django1版本，django2.2+使用path和re_path
-from .views import user, homepage, project, projectmanage, wiki
+from .views import user, homepage, project, projectmenu, wiki
 
 urlpatterns = [
     # 用户认证相关
@@ -19,16 +19,16 @@ urlpatterns = [
     url(r'^project/cancelstar/$', project.project_cancelstar, name='project_cancelstar'),
 
     # 单项目管理功能相关（include第一项要用列表不能用元组）
-    url(r'^projectmanage/(?P<project_id>\d+)/', include([
-        url(r'^dashboard/$', projectmanage.dashboard, name='dashboard'),
-        url(r'^issue/$', projectmanage.issue, name='issue'),
-        url(r'^statistic/$', projectmanage.statistic, name='statistic'),
+    url(r'^projectmenu/(?P<project_id>\d+)/', include([
+        url(r'^dashboard/$', projectmenu.dashboard, name='dashboard'),
+        url(r'^issue/$', projectmenu.issue, name='issue'),
+        url(r'^statistic/$', projectmenu.statistic, name='statistic'),
         url(r'^wiki/$', wiki.wiki, name='wiki'),
         url(r'^wiki/add/$', wiki.wiki_add, name='wiki_add'),
         url(r'^wiki/edit/(?P<wiki_id>\d+)/$', wiki.wiki_edit, name='wiki_edit'),
         url(r'^wiki/delete/(?P<wiki_id>\d+)/$', wiki.wiki_delete, name='wiki_delete'),
         url(r'^wiki/cata_log/$', wiki.wiki_catalog, name='wiki_catalog'),
-        url(r'^file/$', projectmanage.file, name='file'),
-        url(r'^setting/$', projectmanage.setting, name='setting')
+        url(r'^file/$', projectmenu.file, name='file'),
+        url(r'^setting/$', projectmenu.setting, name='setting')
     ], None, None)),
 ]

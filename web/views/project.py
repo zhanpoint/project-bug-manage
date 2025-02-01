@@ -2,15 +2,32 @@ from django.shortcuts import render, HttpResponse, redirect
 from django.http import JsonResponse
 from web.forms.project import NewProjectModelForm
 from web import models
+from utils.aliyun import oss
+import oss2
 
 
 def project(request):
     if request.method == 'POST':
         form = NewProjectModelForm(request, data=request.POST)
         if form.is_valid():
-            # 由于该字段newproject.leader没有默认值，需要指定是哪个用户创建项目
             newproject = form.save(commit=False)
+            # 由于该字段newproject.leader没有默认值，需要指定是哪个用户创建项目
             newproject.leader = request.bugtracer.user
+
+            # 为新建项目创建对应的oss桶
+            """
+            阿里云 OSS 的命名规范:
+                 1. 只能包含小写字母、数字和短横线(-)
+                 2. 必须以小写字母或者数字开头和结尾
+                 3. 长度必须在3-63字节之间
+            """
+            bucket_name = f"bugtracer---{newproject.project_name}"
+            newproject.bucket_name = bucket_name
+            region = 'cn-wuhan-lr'
+            endpoint = f'https://oss-{region}.aliyuncs.com'
+            bucket = oss2.Bucket(oss.auth, endpoint, bucket_name, region=region)
+            oss.create_bucket(bucket)
+
             newproject.save()
 
             return JsonResponse({'status': True})

@@ -60,6 +60,7 @@ class Project(models.Model):
     join_number = models.PositiveIntegerField(verbose_name='项目成员数量', default=1)
     star = models.BooleanField(verbose_name='项目是否星标', default=False)
     create_time = models.DateTimeField(verbose_name='创建时间', auto_now_add=True)
+    bucket_name = models.CharField(verbose_name='项目对应的OSS存储桶', max_length=64, null=True, blank=True)
 
 
 # 项目成员表

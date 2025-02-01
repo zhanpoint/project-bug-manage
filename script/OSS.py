@@ -19,30 +19,34 @@ for var in required_env_vars:
 # 从环境变量中获取访问凭证
 auth = oss2.ProviderAuthV4(EnvironmentVariableCredentialsProvider())
 
-# 设置Endpoint和Region
-endpoint = 'https://oss-cn-wuhan-lr-internal.aliyuncs.com'
-# 填写Endpoint对应的Region信息，例如cn-hangzhou。
 region = 'cn-wuhan-lr'
+endpoint = 'https://oss-{}.aliyuncs.com'.format(region)
 
-def generate_unique_bucket_name():
+
+def generate_unique_bucket_name():  # 生成唯一的Bucket名称
     # 获取当前时间戳
     timestamp = int(time.time())
     # 生成0到9999之间的随机数
     random_number = random.randint(0, 9999)
-    # 构建唯一的Bucket名称
+    # 将时间戳和随机数组合成唯一名称并返回
     bucket_name = f"demo-{timestamp}-{random_number}"
     return bucket_name
 
+
 # 生成唯一的Bucket名称
 bucket_name = generate_unique_bucket_name()
-bucket = oss2.Bucket(auth, endpoint, bucket_name, region=region)
+# 初始化一个OSS（对象存储服务）的Bucket对象
+bucket = oss2.Bucket(auth, endpoint, 'zhanpoint', region=region)
+
 
 def create_bucket(bucket):
     try:
+        # 创建一个私有权限的存储桶
         bucket.create_bucket(oss2.models.BUCKET_ACL_PRIVATE)
         logging.info("Bucket created successfully")
     except oss2.exceptions.OssError as e:
         logging.error(f"Failed to create bucket: {e}")
+
 
 def upload_file(bucket, object_name, data):
     try:
@@ -50,6 +54,7 @@ def upload_file(bucket, object_name, data):
         logging.info(f"File uploaded successfully, status code: {result.status}")
     except oss2.exceptions.OssError as e:
         logging.error(f"Failed to upload file: {e}")
+
 
 def download_file(bucket, object_name):
     try:
@@ -61,6 +66,7 @@ def download_file(bucket, object_name):
     except oss2.exceptions.OssError as e:
         logging.error(f"Failed to download file: {e}")
 
+
 def list_objects(bucket):
     try:
         objects = list(islice(oss2.ObjectIterator(bucket), 10))
@@ -68,6 +74,7 @@ def list_objects(bucket):
             logging.info(obj.key)
     except oss2.exceptions.OssError as e:
         logging.error(f"Failed to list objects: {e}")
+
 
 def delete_objects(bucket):
     try:
@@ -81,6 +88,7 @@ def delete_objects(bucket):
     except oss2.exceptions.OssError as e:
         logging.error(f"Failed to delete objects: {e}")
 
+
 def delete_bucket(bucket):
     try:
         bucket.delete_bucket()
@@ -88,17 +96,16 @@ def delete_bucket(bucket):
     except oss2.exceptions.OssError as e:
         logging.error(f"Failed to delete bucket: {e}")
 
-# 主流程
-if __name__ == '__main__':
-    # 1. 创建Bucket
-    create_bucket(bucket)
-    # 2. 上传文件
-    upload_file(bucket, 'test-string-file', b'Hello OSS, this is a test string.')
-    # # 3. 下载文件
-    # download_file(bucket, 'test-string-file')
-    # # 4. 列出Bucket中的对象
-    # list_objects(bucket)
-    # # 5. 删除Bucket中的对象
-    # delete_objects(bucket)
-    # # 6. 删除Bucket
-    # delete_bucket(bucket)
+
+# 添加检查bucket是否存在的函数
+def check_bucket_exists(bucket):
+    try:
+        bucket.get_bucket_info()
+        logging.info(f"Bucket {bucket.bucket_name} exists")
+        return True
+    except oss2.exceptions.NoSuchBucket:
+        logging.error(f"Bucket {bucket.bucket_name} does not exist")
+        return False
+    except oss2.exceptions.OssError as e:
+        logging.error(f"Failed to check bucket: {e}")
+        return False
