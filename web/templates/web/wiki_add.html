@@ -61,12 +61,15 @@
     <!--引入编辑器插件功能--->
     <script src="{% static 'plugin/editor.md-master/editormd.min.js' %}"></script>
     <script>
-        // 获取项目文档详细内容的路径
-        const wiki_detail_url = "{% url 'web:wiki' project_id=request.bugtracer.project.id %}";
+
         $(function () {
             initCatalog();  // 当body加载完成之后自动执行函数
             initEditorMd();  // 初始化编辑器插件
         })
+        // 项目文档详细内容的URL
+        const wiki_detail_url = "{% url 'web:wiki' project_id=request.bugtracer.project.id %}";
+        // 项目文档资源上传的URL
+        const wiki_upload_url = "{% url 'web:wiki_upload' project_id=request.bugtracer.project.id %}";
 
         function initCatalog() {
             // 待优化：获取文档目录应该通过用户点击文档一步步请求获取该文档下的每一级的文档，而不是一次性展示所有的文档目录
@@ -102,7 +105,10 @@
                 width: "100%",
                 height: 640,
                 // 引用Editor.md插件所需的静态资源文件的路径，默认是当前路径下的lib文件夹
-                path: "{% static 'plugin/editor-md/lib/' %}",
+                path: "{% static 'plugin/editor.md-master/lib/' %}",
+                imageUpload: true,  // 开启本地图片上传功能
+                imageFormats: ["jpg", "jpeg", "gif", "png", "bmp", "webp"],  // 允许上传的图片格式
+                imageUploadURL: wiki_upload_url,  // 图片上传的url地址
             });
         }
     </script>

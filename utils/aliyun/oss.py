@@ -16,12 +16,6 @@ for var in required_env_vars:
         logging.error(f"Environment variable {var} is not set.")
         exit(1)
 
-# 从环境变量中获取访问凭证
-auth = oss2.ProviderAuthV4(EnvironmentVariableCredentialsProvider())
-
-region = 'cn-wuhan-lr'
-endpoint = f'https://oss-{region}.aliyuncs.com'
-
 
 def generate_unique_bucket_name():  # 生成唯一的Bucket名称
     # 获取当前时间戳
@@ -33,6 +27,11 @@ def generate_unique_bucket_name():  # 生成唯一的Bucket名称
     return bucket_name
 
 
+# 签名版本4要求请求中必须包含有效的区域信息region。
+auth = oss2.ProviderAuthV4(EnvironmentVariableCredentialsProvider())
+# endpoint 要与 region 对应
+region = 'cn-wuhan-lr'  # 可选：关键字参数
+endpoint = f'https://oss-{region}.aliyuncs.com'
 # 生成唯一的Bucket名称
 bucket_name = generate_unique_bucket_name()
 # 初始化一个OSS（对象存储服务）的Bucket对象
@@ -48,9 +47,15 @@ def create_bucket(bucket):
         logging.error(f"Failed to create bucket: {e}")
 
 
-def upload_file(bucket, object_name, data):
+def upload_file(bucket, key, data, headers=None):
+    """
+    :param bucket: 阿里云oss中指定的存储桶。
+    :param key: 上传后在OSS中的对象名称（即文件路径和名称）
+    :param data: 要上传的数据内容，可以是字符串、字节流或文件对象
+    :return:
+    """
     try:
-        result = bucket.put_object(object_name, data)
+        result = bucket.put_object(key, data)
         logging.info(f"File uploaded successfully, status code: {result.status}")
     except oss2.exceptions.OssError as e:
         logging.error(f"Failed to upload file: {e}")

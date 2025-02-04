@@ -69,7 +69,7 @@ class AllMiddleWare(MiddlewareMixin):
             片段标识符 (Fragment Identifier)：可选部分，用于标识页面内的某个位置，以 # 开头。
         """
         # startswith指定是路径的前缀，而不是整个URL的前缀
-        if not request.path_info.startswith('/web/projectmanage/'):
+        if not request.path_info.startswith('/web/projectmenu/'):
             return None
         # 如果当前用户要进入项目管理页面，则取项目id，判断该用户创建或参与的项目中是否存在其要管理的项目，
         project_id = view_kwargs.get('project_id')

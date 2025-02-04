@@ -1,0 +1,5 @@
+.panel .panel-heading {
+    display: flex;  /* flex 布局 */
+    flex-direction: row;  /* 主轴方向为水平 */
+    justify-content: space-between;  /* 主轴两端对齐,首尾项分别靠住容器的两端 */
+}

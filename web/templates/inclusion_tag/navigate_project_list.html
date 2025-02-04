@@ -1,7 +1,7 @@
 <li class="dropdown">
     <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button">项目{% if request.bugtracer.project %}(
         {{ request.bugtracer.project.project_name }}){% endif %}<i class="fa fa-caret-down"
-                                                           aria-hidden="true"></i></a>
+                                                                   aria-hidden="true"></i></a>
     <ul class="dropdown-menu">
         <li style="background-color: #66afe9"><i class="fa fa-plus" aria-hidden="true"></i>我创建的项目</li>
         {% for project in create %}

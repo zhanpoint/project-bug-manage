@@ -92,3 +92,34 @@ class Wiki(models.Model):
     # __str__方法当输出或打印对象时通常返回一个描述对象状态的字符串。
     def __str__(self):
         return self.title
+
+
+# 文件表
+class FileRepository(models.Model):
+    file_type_choices = [
+        (1, '文件'),
+        (2, '文件夹')
+    ]
+
+    name = models.CharField(verbose_name='名称', max_length=128)
+    file_type = models.SmallIntegerField(verbose_name='文件类型', choices=file_type_choices)
+    file_size = models.BigIntegerField(verbose_name='文件大小', help_text='单位为字节', null=True, blank=True)  # 文件夹大小为null
+    file_path = models.CharField(verbose_name='文件路径', max_length=255, null=True, blank=True)
+    key = models.CharField(verbose_name='OSS对象存储的key', max_length=128, null=True, blank=True)
+    file_extension = models.CharField(verbose_name='文件后缀', max_length=32, null=True, blank=True)
+
+    # 外键关联
+    project = models.ForeignKey(verbose_name='所属项目', to='Project', on_delete=models.CASCADE)
+    parent = models.ForeignKey(verbose_name='上级目录', to='self', null=True, blank=True,
+                               related_name='children', on_delete=models.CASCADE)
+
+    # 更新信息
+    update_user = models.ForeignKey(verbose_name='最后更新者', to='UserInfo', on_delete=models.CASCADE)
+    update_datetime = models.DateTimeField(verbose_name='最后更新时间', auto_now=True)
+
+    class Meta:
+        verbose_name = '文件库'
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return self.name

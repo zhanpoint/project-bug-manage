@@ -1,7 +1,113 @@
 {% extends 'templates/base/manage_center.html' %}
-
+{% load static %}
+{% block css %}
+    <link rel="stylesheet" href="{% static 'web/css/file.css' %}"/>
+{% endblock %}
 {% block content %}
     <div class="container-fluid">
-        <h1>file</h1>
+        <div class="panel panel-warning" style="margin-top: 25px">
+            <div class="panel-heading">
+                <div>
+
+                </div>
+                <div>
+                    <a type="button" data-toggle="modal" data-target="#mymodal" data-whatever="新建文件夹"
+                       class="btn btn-success btn-sm">
+                        <i class="fa fa-plus-circle"></i>新建文件夹
+                    </a>
+                </div>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Username</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <th scope="row">1</th>
+                    <td>Mark</td>
+                    <td>Otto</td>
+                    <td>@mdo</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
+    <div class="modal fade" id="mymodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title" id="myModalLabel"></h4>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="form-group">
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                            </div>
+                        {% endfor %}
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="addfolder_btn">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block js %}
+    <script>
+        $(function () {
+            initmodal();  // 根据触发按钮改变模态内容
+            addfolder();  // 添加文件夹
+        })
+
+        function initmodal() {
+            // 监听ID为'mymodal'的模态框的显示事件
+            $('#mymodal').on('show.bs.modal', function (event) {
+                // 获取触发模态框的元素（通常是按钮）
+                let button = $(event.relatedTarget)
+                // 获取按钮上data-whatever属性的值
+                let recipient = button.data('whatever')
+                // 获取当前模态框的jQuery对象
+                let modal = $(this)
+                // 设置模态框标题
+                modal.find('.modal-title').text(recipient)
+                // 设置模态框内input输入框的值
+                // modal.find('.modal-body input').val(recipient)
+            })
+        }
+
+        function addfolder() {
+            $('#addfolder_btn').click(function () {
+                $.ajax({
+                    url: location.href,  // 当前请求地址
+                    type: "POST",
+                    data: {
+                        'name': $('#id_name').val(),
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'  // 将Django生成的CSRF令牌（csrf_token）添加到请求数据中
+                    },
+                    dataType: "json",
+                    success: function (data) {
+                        if (data.status) {
+                            alert('添加成功')
+                        } else {
+                            alert('添加失败')
+                        }
+                    }
+                })
+            })
+
+        }
+    </script>
 {% endblock %}
