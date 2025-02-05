@@ -21,9 +21,18 @@ class FileModelForm(BootstrapForm, ModelForm):
         parent_object = self.parent
         project = self.request.bugtracer.project  # 从request中获取project
 
-        queryset = models.FileRepository.objects.filter(file_type=2, name=name, project=self.request.bugtracer.project)
+        # 构建查询集
+        queryset = models.FileRepository.objects.filter(
+            file_type=2,
+            name=name,
+            project=self.request.bugtracer.project)
 
-        # 然后根据是否有父文件夹来判断：
+        # 情况1：名称没改变，情况2：改成新名称）以上两种情况均成立
+        # 情况1：如果当前实例已经存在（即有主键），则从查询集中排除当前实例，以避免重复操作
+        if self.instance.pk:
+            queryset = queryset.exclude(id=self.instance.pk)
+
+        # 检查同级目录
         if self.parent:
             # 如果有父文件夹，检查同一父文件夹下是否存在同名文件夹
             exists = queryset.filter(parent=self.parent).exists()

@@ -7,9 +7,19 @@
     <div class="container-fluid">
         <div class="panel panel-warning" style="margin-top: 25px">
             <div class="panel-heading">
-                <div>
-
+                <!-- 添加导航路径 -->
+                <div class="breadcrumb" style="margin: 0; padding: 0; background-color: transparent;">
+                    <a href="{% url 'web:file' project_id=request.bugtracer.project.id %}" class="btn btn-link">
+                        <i class="fa fa-home" aria-hidden="true"></i> 根目录
+                    </a>
+                    {% for item in breadcrumb_list %}
+                        <a href="{% url 'web:file' project_id=request.bugtracer.project.id %}?folder={{ item.id }}"
+                           class="btn btn-link">
+                            <i class="fa fa-caret-right"></i> {{ item.name }}
+                        </a>
+                    {% endfor %}
                 </div>
+
                 <div>
                     <a type="button" data-toggle="modal" data-target="#mymodal" data-whatever="新建文件夹"
                        class="btn btn-success btn-sm">
@@ -59,8 +69,15 @@
                         </td>
                         <td>{{ item.update_datetime }}</td>
                         <td>
-                            <a>编辑</a>
-                            <a>删除</a>
+                            <a class="btn btn-primary btn-xs"
+                               data-toggle="modal"
+                               data-target="#mymodal"
+                               data-whatever="编辑文件夹"
+                               data-folder-id="{{ item.id }}"
+                               data-folder-name="{{ item.name }}">
+                                编辑
+                            </a>
+                            <a class="btn btn-danger btn-xs">删除</a>
                         </td>
                     </tr>
                 {% endfor %}
@@ -78,8 +95,10 @@
                     <h4 class="modal-title" id="myModalLabel"></h4>
                 </div>
                 <div class="modal-body">
-                    <form>
+                    <form id="folderForm">
                         {% csrf_token %}
+                        <!--  -->
+                        <input type="hidden" id="folderId" name="folderId">
                         {% for field in form %}
                             <div class="form-group">
                                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -91,7 +110,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="addfolder_btn">确定</button>
+                    <button type="button" class="btn btn-primary" id="submit_btn">确定</button>
                 </div>
             </div>
         </div>
@@ -101,39 +120,60 @@
     <script>
         $(function () {
             initmodal();  // 根据触发按钮改变模态内容
-            addfolder();  // 添加文件夹
+            folderoperate();  // 新建添加文件夹
         })
 
         function initmodal() {
             // 监听ID为'mymodal'的模态框的显示事件
             $('#mymodal').on('show.bs.modal', function (event) {
-                // 获取触发模态框的元素（通常是按钮）
-                let button = $(event.relatedTarget)
-                // 获取按钮上data-whatever属性的值
-                let recipient = button.data('whatever')
                 // 获取当前模态框的jQuery对象
                 let modal = $(this)
+                // 获取触发模态框的元素（通常是按钮）
+                let button = $(event.relatedTarget)
+
+                // 获取数据（当前点击按钮所操作文件夹的数据）
+                let recipient = button.data('whatever')
+                let folderId = button.data('folder-id');  // 只有编辑模式才会有folderId
+                let folderName = button.data('folder-name');  // 只有编辑模式才会有folderName
+
                 // 设置模态框标题
                 modal.find('.modal-title').text(recipient)
+                // 重置表单（获取jQuery对象（所有的form元素）中的第一个原生DOM元素）
+                modal.find('form')[0].reset();
+                // 清除错误信息
+                modal.find('.error-msg').text('');
 
-                modal.find('form')[0].reset();  // 重置表单（获取jQuery对象（所有的form元素）中的第一个原生DOM元素）
-                modal.find('.error-msg').text('');  // 清除错误信息
+                if (folderId) {  // 编辑模式
+                    modal.find('#folderId').val(folderId);  // 将隐藏表单的内容设置为当前编辑文件夹的id
+                    modal.find('#id_name').val(folderName);  // 设置name字段输入框的值为当前文件夹的名称
+                } else {  // 新建模式
+                    modal.find('#folderId').val('');
+                    modal.find('#id_name').val('');
+                }
+
             })
         }
 
-        function addfolder() {
-            $('#addfolder_btn').click(function () {
+        function folderoperate() {
+            $('#submit_btn').click(function () {
+                let url = location.href;  // 当前请求地址
+                let folderId = $('#folderId').val()
+                let method = folderId ? 'PUT' : 'POST';  // 编辑模式：PUT，新增模式：POST
                 $.ajax({
-                    url: location.href,  // 当前请求地址
-                    type: "POST",
+                    url: url,
+                    type: method,
                     data: {
+                        'folderId': folderId,
                         'name': $('#id_name').val(),
                         'csrfmiddlewaretoken': '{{ csrf_token }}'  // 将Django生成的CSRF令牌（csrf_token）添加到请求数据中
                     },
                     dataType: "json",
                     success: function (data) {
                         if (data.status) {
-                            alert('添加成功')
+                            // 1. 关闭模态框
+                            $('#mymodal').modal('hide');
+                            // 2. 刷新页面
+                            window.location.reload();
                         } else {
                             // 表单校验失败，显示错误信息
                             $.each(data.error, function (key, value) {
