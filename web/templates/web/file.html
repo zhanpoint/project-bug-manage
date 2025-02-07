@@ -75,9 +75,16 @@
                                data-whatever="编辑文件夹"
                                data-folder-id="{{ item.id }}"
                                data-folder-name="{{ item.name }}">
-                                编辑
+                                <i class="fa fa-edit"></i>编辑
                             </a>
-                            <a class="btn btn-danger btn-xs">删除</a>
+                            <!--HTML中，id必须是唯一的,由于该a标签是循环生成的，因此不能设置id值 -->
+                            <a class="btn btn-danger btn-xs delete_btn"
+                               data-toggle="modal"
+                               data-target="#deleteModal"
+                               data-id="{{ item.id }}"
+                               data-name="{{ item.name }}">
+                                <i class="fa fa-trash"></i>删除
+                            </a>
                         </td>
                     </tr>
                 {% endfor %}
@@ -85,20 +92,23 @@
             </table>
         </div>
     </div>
-    <div class="modal fade" id="mymodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal fade" id="mymodal" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
                     </button>
                     <h4 class="modal-title" id="myModalLabel"></h4>
                 </div>
                 <div class="modal-body">
-                    <form id="folderForm">
+                    <form>
                         {% csrf_token %}
-                        <!--  -->
-                        <input type="hidden" id="folderId" name="folderId">
+                        <!-- 在编辑文件夹时，我们会把当前文件夹的 ID 存储在隐藏表单中， -->
+                        <!-- name属性通常是在服务器端通过 request.POST.get('folderId') 获取值时使用的键名
+                        如果使用 AJAX 手动构建数据发送（而不是表单自动提交），确实可以省略 name 属性-->
+                        {#                       <input type="hidden" id="folderId" name="folderId">#}
+                        <input type="hidden" id="folderId">
                         {% for field in form %}
                             <div class="form-group">
                                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -115,12 +125,40 @@
             </div>
         </div>
     </div>
+    <!-- 删除确认模态框 -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                    <h4 class="modal-title">
+                        <i class="fa fa-exclamation-triangle text-warning"></i>
+                        提示
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <div>
+                        确定要删除文件夹 "<span id="folderToDelete"></span>" 吗？
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="confirmDelete">
+                        <i class="fa fa-trash"></i> 确定删除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 {% block js %}
     <script>
         $(function () {
             initmodal();  // 根据触发按钮改变模态内容
-            folderoperate();  // 新建添加文件夹
+            bindAddFolder();  // 绑定新建添加文件夹事件
+            bindDeleteFolder();  // 绑定删除文件夹事件
         })
 
         function initmodal() {
@@ -144,7 +182,7 @@
                 modal.find('.error-msg').text('');
 
                 if (folderId) {  // 编辑模式
-                    modal.find('#folderId').val(folderId);  // 将隐藏表单的内容设置为当前编辑文件夹的id
+                    modal.find('#folderId').val(folderId);  // 将ID存储在隐藏字段中
                     modal.find('#id_name').val(folderName);  // 设置name字段输入框的值为当前文件夹的名称
                 } else {  // 新建模式
                     modal.find('#folderId').val('');
@@ -154,18 +192,20 @@
             })
         }
 
-        function folderoperate() {
+        function bindAddFolder() {
             $('#submit_btn').click(function () {
                 let url = location.href;  // 当前请求地址
-                let folderId = $('#folderId').val()
+                let folderId = $('#folderId').val()  // 获取在隐藏字段中的ID
                 let method = folderId ? 'PUT' : 'POST';  // 编辑模式：PUT，新增模式：POST
                 $.ajax({
                     url: url,
-                    type: method,
+                    type: "POST",
+                    headers: {
+                        "X-CSRFToken": $('[name="csrfmiddlewaretoken"]').val()
+                    },
                     data: {
                         'folderId': folderId,
                         'name': $('#id_name').val(),
-                        'csrfmiddlewaretoken': '{{ csrf_token }}'  // 将Django生成的CSRF令牌（csrf_token）添加到请求数据中
                     },
                     dataType: "json",
                     success: function (data) {
@@ -184,6 +224,67 @@
                 })
             })
 
+        }
+
+        function bindDeleteFolder() {
+            let deleteId = null;
+
+            // 点击删除按钮
+            $('.delete_btn').click(function () {
+                deleteId = $(this).data('id');  // 获取当前删除的文件夹ID
+                $('#folderToDelete').text($(this).data('name'));  // 设置要删除的文件夹名称
+                // 移除了重复的 modal('show') 调用，因为 Bootstrap 的 data-toggle="modal" 已经会处理模态框的显示
+                // $('#deleteModal').modal('show');
+            });
+
+            // 确认删除
+            $('#confirmDelete').click(function () {
+                // $btn 是一个 jQuery 对象，它引用了当前被选中的按钮元素
+                // 禁用当前按钮，并将按钮文本更改为带有旋转图标的“删除中...”
+                let $btn = $(this).prop('disabled', true)
+                    .html('<i class="fa fa-spinner fa-spin"></i> 删除中...');
+
+                $.ajax({
+                    url: location.href,
+                    type: 'POST',
+                    data: {
+                        'folderId': deleteId,
+                        'delete': true,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function (res) {
+                        if (res.status) {
+                            $('#deleteModal').modal('hide');
+                            showMessage('success', '删除成功');
+                            // 让用户能看到"删除成功"的提示消息（如果立即刷新页面，提示消息可能还没来得及看到就消失了）
+                            setTimeout(() => window.location.reload(), 1500);
+                        } else {
+                            showMessage('error', res.error || '删除失败');
+                            $btn.prop('disabled', false)
+                                .html('<i class="fa fa-trash"></i> 确定删除');
+                        }
+                    }
+                });
+            });
+        }
+
+        // 显示消息提示
+        function showMessage(type, msg) {
+            // 1. 根据type参数决定使用哪个图标和样式类
+            let icon = type === 'success' ? 'check-circle' : 'times-circle';  // 设置图标(对钩：叉号)
+            let alertClass = type === 'success' ? 'success' : 'danger';  // 设置样式（红色：绿色）
+            // left: 50% - 将元素的左侧定位到视窗宽度的50%处
+            // transform: translateX(-50%) - 只在X轴（水平方向）上向左移动自身宽度的50%
+            // .appendTo('body')：将消息框添加到页面
+            // .delay(1500)：停留1.5秒
+            // .fadeOut()：使用淡出动画效果
+            // .remove()：动画完成后删除元素
+            $(`<div class="alert alert-${alertClass}" style="position: fixed; top: 30px; left: 50%;
+        transform: translateX(-50%); text-align: center; z-index: 9999;">
+                <i class="fa fa-${icon}"></i> ${msg}
+            </div>`).appendTo('body').delay(1500).fadeOut(function () {
+                $(this).remove();
+            });
         }
     </script>
 {% endblock %}

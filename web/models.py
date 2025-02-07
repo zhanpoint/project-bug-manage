@@ -55,12 +55,23 @@ class Project(models.Model):
     # blank=True，则在表单提交时，该字段可以为空而不会引发验证错误
     project_desc = models.CharField(verbose_name='项目描述', max_length=100, null=True, blank=True)
     project_color = models.SmallIntegerField(verbose_name='项目颜色', choices=color_choice, default=1)
-    remain_space = models.PositiveIntegerField(verbose_name='剩余空间', default=0, help_text='单位为MB')
+    remain_space = models.PositiveIntegerField(verbose_name='剩余空间', help_text='单位为kb')
     leader = models.ForeignKey(verbose_name='项目负责人', to='UserInfo', on_delete=models.CASCADE)
     join_number = models.PositiveIntegerField(verbose_name='项目成员数量', default=1)
     star = models.BooleanField(verbose_name='项目是否星标', default=False)
     create_time = models.DateTimeField(verbose_name='创建时间', auto_now_add=True)
     bucket_name = models.CharField(verbose_name='项目对应的OSS存储桶', max_length=64, null=True, blank=True)
+    region = models.CharField(verbose_name='项目所属区域', max_length=64, default='cn-wuhan-lr')
+
+    # 只有当显式调用save()方法时，才会执行save方法并保存到数据库
+    def save(self, *args, **kwargs):  # self 指的是当前的 Project 对象实例
+        if not self.pk:  # 只在创建新项目时设置默认空间
+            # 获取项目负责人的会员等级
+            member_level = self.leader.member_level
+            # 将单位从GB转换为MB (1GB = 1024MB)
+            self.remain_space = member_level.single_project_space * 1024 * 1024
+        # 调用 models.Model（Django模型的基类）的 save 方法
+        super().save(*args, **kwargs)
 
 
 # 项目成员表

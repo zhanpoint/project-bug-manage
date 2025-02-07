@@ -114,3 +114,16 @@ def check_bucket_exists(bucket):
     except oss2.exceptions.OssError as e:
         logging.error(f"Failed to check bucket: {e}")
         return False
+
+
+# 删除文件
+def delete_file(bucket_name, key, region):
+    import oss2
+    auth = oss2.ProviderAuthV4(EnvironmentVariableCredentialsProvider())
+    endpoint = f'https://oss-{region}.aliyuncs.com'
+    bucket = oss2.Bucket(auth, endpoint, bucket_name, region=region)
+    try:
+        bucket.delete_object(key)
+        logging.info(f"File {key} deleted successfully")
+    except oss2.exceptions.OssError as e:
+        logging.error(f"Failed to delete file: {e}")

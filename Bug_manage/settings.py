@@ -141,13 +141,13 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'zh-hans'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Shanghai'  # 确保设置为中国时区：中国使用的是东八区时区，通常表示为 Asia/Shanghai 或 UTC+8
 
 USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False  # 使所有时间都以本地时间存储，如果你的应用需要处理多个时区的用户，建议保持 USE_TZ = True 并正确处理时区转换
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/

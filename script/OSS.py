@@ -109,3 +109,12 @@ def check_bucket_exists(bucket):
     except oss2.exceptions.OssError as e:
         logging.error(f"Failed to check bucket: {e}")
         return False
+
+
+# 删除文件
+def delete_file(bucket, object_name):
+    try:
+        bucket.delete_object(object_name)
+        logging.info(f"File {object_name} deleted successfully")
+    except oss2.exceptions.OssError as e:
+        logging.error(f"Failed to delete file: {e}")
