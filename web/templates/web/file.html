@@ -167,6 +167,7 @@
     <script>
         const file_add_url = "{% url 'web:file_add' project_id=request.bugtracer.project.id %}";
         const file_edit_url = "{% url 'web:file_edit' project_id=request.bugtracer.project.id %}";
+        const file_delete_url = "{% url 'web:file_delete' project_id=request.bugtracer.project.id %}";
         $(function () {
             initmodal();  // 根据触发按钮改变模态内容
             bindAddEditFolder();  // 绑定新建添加文件夹事件
@@ -230,7 +231,7 @@
                     success: function (data) {
                         if (data.status) {
                             // 1. 关闭模态框
-                            $('#mymodal').modal('hide');
+                            $('#add_edit_modal').modal('hide');
                             // 2. 刷新页面
                             window.location.reload();
                         } else {
@@ -264,11 +265,10 @@
                     .html('<i class="fa fa-spinner fa-spin"></i> 删除中...');
 
                 $.ajax({
-                    url: location.href,
+                    url: file_delete_url,
                     type: 'POST',
                     data: {
                         'folderId': deleteId,
-                        'delete': true,
                         'csrfmiddlewaretoken': '{{ csrf_token }}'
                     },
                     success: function (res) {
