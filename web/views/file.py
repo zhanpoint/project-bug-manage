@@ -107,9 +107,9 @@ def file_edit(request, project_id):
 
 
 def file_delete(request, project_id):
-    """删除文件夹"""
+    """删除文件夹/文件"""
     if request.method == 'POST':  # 最好使用delete请求
-        folderId = request.POST.get('folderId', '')  # 操作的文件夹 ID
+        folderId = request.POST.get('folderId', '')  # 操作的文件夹ID
 
         if not folderId or not folderId.isdecimal():
             return JsonResponse({'status': False, 'error': '参数错误'})
@@ -118,6 +118,8 @@ def file_delete(request, project_id):
             id=int(folderId),
             project=request.bugtracer.project,
         ).first()
+        if not folder_object:
+            return JsonResponse({'status': False, 'error': '文件或文件夹不存在'})
 
         if folder_object.file_type == 1:  # 删除文件
             # 更新项目剩余空间
@@ -135,12 +137,11 @@ def file_delete(request, project_id):
                 project=request.bugtracer.project,
                 file_type=1
             ).filter(
-                # 表示文件夹树的唯一标识
-                tree_id=folder_object.tree_id,
-                # 表示左边界大于当前文件夹的左边界
-                lft__gt=folder_object.lft,
-                # 表示右边界小于当前文件夹的右边界
-                rght__lt=folder_object.rght
+                parent__in=models.FileRepository.objects.filter(
+                    tree_id=folder_object.tree_id,
+                    lft__gte=folder_object.lft,
+                    rght__lte=folder_object.rght
+                )
             )
 
             # 计算所有文件的总大小
