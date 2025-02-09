@@ -52,12 +52,16 @@ def file(request, project_id):
 def file_add(request, project_id):
     # 获取当前显示列表的父级文件夹对象
     parent_obj = None
-    folder_id = request.GET.get('folder', '')
-    if folder_id and folder_id.isdigit():
-        # parent_obj 获取到的不是一个 QuerySet 对象，而是单个 FileRepository 实例
-        parent_obj = models.FileRepository.objects.filter(project=request.bugtracer.project, id=folder_id,
-                                                          file_type=2).first()
     if request.method == 'POST':
+        # 从POST数据中获取父文件夹ID
+        parent_id = request.POST.get('parent', '')
+        if parent_id and parent_id.isdigit():
+            parent_obj = models.FileRepository.objects.filter(
+                project=request.bugtracer.project,
+                id=parent_id,
+                file_type=2
+            ).first()
+
         form = FileModelForm(request, parent_obj, data=request.POST)
         form.instance.project = request.bugtracer.project
         form.instance.file_type = 2

@@ -31,7 +31,7 @@
                         </button>
                         <!-- 新建文件夹按钮 -->
                         <a type="button" data-toggle="modal" data-target="#add_edit_modal" data-whatever="新建文件夹"
-                           class="btn btn-success">
+                           data-parent_id="{{ request.GET.folder_id }}" class="btn btn-success">
                             <i class="fa fa-plus-circle"></i>新建文件夹
                         </a>
                     </div>
@@ -119,6 +119,8 @@
                         如果使用 AJAX 手动构建数据发送（而不是表单自动提交），确实可以省略 name 属性-->
                         {#                       <input type="hidden" id="folderId" name="folderId">#}
                         <input type="hidden" id="folderId">
+                        <!--添加隐藏的父文件夹ID字段-->
+                        <input type="hidden" id="parentId">
                         {% for field in form %}
                             <div class="form-group">
                                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -184,8 +186,9 @@
 
                 // 获取数据（当前点击按钮所操作文件夹的数据）
                 let recipient = button.data('whatever')
-                let folderId = button.data('folder-id');  // 只有编辑模式才会有folderId
-                let folderName = button.data('folder-name');  // 只有编辑模式才会有folderName
+                let folderId = button.data('folder-id');  // 编辑的文件夹ID
+                let folderName = button.data('folder-name');  // 编辑的文件夹名称
+                let parentId = button.data('parent_id')  // 新建时的父文件夹ID
 
                 // 设置模态框标题
                 modal.find('.modal-title').text(recipient)
@@ -200,6 +203,8 @@
                 } else {  // 新建模式
                     modal.find('#folderId').val('');
                     modal.find('#id_name').val('');
+                    // 保存父文件夹ID
+                    modal.find('#parentId').val(parentId)
                 }
 
             })
@@ -243,6 +248,7 @@
                     // POST 请求时使用表单数据
                     let formData = new FormData();  // 创建 FormData 对象
                     formData.append('name', $('#id_name').val() || '');  // 将表单中的name字段值添加到FormData对象中
+                    formData.append('parent', $('#parentId').val() || '');  // 将父文件夹ID添加到FormData对象中
                     ajaxOptions.data = formData;  // 配置ajaxOptions，设置data为FormData对象
                     // POST 请求不需要设置 Content-Type，让浏览器自动处理数据格式
                     ajaxOptions.processData = false;
