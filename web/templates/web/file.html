@@ -174,8 +174,8 @@
         })
 
         function initmodal() {
-            // 监听ID为'mymodal'的模态框的显示事件
-            $('#mymodal').on('show.bs.modal', function (event) {
+            // 监听ID为'add_edit_modal'的模态框的显示事件
+            $('#add_edit_modal').on('show.bs.modal', function (event) {
                 // 获取当前模态框的jQuery对象
                 let modal = $(this)
                 // 获取触发模态框的元素（通常是按钮）
@@ -206,20 +206,26 @@
 
         function bindAddEditFolder() {
             $('#submit_btn').click(function () {
-                let folderId = $('#folderId').val()  // 获取在隐藏字段中的ID
+                let folderId = $('#folderId').val() || ''; // 获取在隐藏字段中的ID
                 let url = folderId ? file_edit_url : file_add_url;  // 当前请求地址
                 let method = folderId ? 'PUT' : 'POST';  // 编辑模式：PUT，新增模式：POST
+
+                // 构造要发送的数据
+                let data = JSON.stringify({
+                    // 如果是新建模式，folderId为空（需要记录模态框表单中name字段值），如果是编辑模式，folderId为当前文件夹ID
+                    'folderId': folderId,
+                    'name': $('#id_name').val() || ''
+                })
+
                 $.ajax({
                     url: url,
                     type: method,
                     headers: {
-                        "X-CSRFToken": $('[name="csrfmiddlewaretoken"]').val()
+                        "X-CSRFToken": $('[name="csrfmiddlewaretoken"]').val(),
+                        // 表示请求体中的数据格式是JSON。服务器会根据这个头部信息来解析请求体中的数据
+                        "Content-Type": "application/json"
                     },
-                    data: {
-                        // 如果是新建模式，folderId为空（需要记录模态框表单中name字段值），如果是编辑模式，folderId为当前文件夹ID
-                        'folderId': folderId,
-                        'name': $('#id_name').val() || '',
-                    },
+                    data: data,  // 发送JSON字符串
                     dataType: "json",
                     success: function (data) {
                         if (data.status) {

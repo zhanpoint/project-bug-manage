@@ -14,7 +14,7 @@ def file(request, project_id):
 
     # 获取当前显示列表的父级文件夹对象
     parent_obj = None
-    folder_id = request.GET.get('folder', '')
+    folder_id = request.GET.get('folder_id', '')
     if folder_id and folder_id.isdigit():
         # parent_obj 获取到的不是一个 QuerySet 对象，而是单个 FileRepository 实例
         parent_obj = models.FileRepository.objects.filter(project=request.bugtracer.project, id=folder_id,
@@ -73,7 +73,7 @@ def file_add(request, project_id):
 def file_edit(request, project_id):
     # 获取当前显示列表的父级文件夹对象
     parent_obj = None
-    folder_id = request.GET.get('folder', '')
+    folder_id = request.GET.get('folder', '')  # 父文件夹id
     if folder_id and folder_id.isdigit():
         # parent_obj 获取到的不是一个 QuerySet 对象，而是单个 FileRepository 实例
         parent_obj = models.FileRepository.objects.filter(project=request.bugtracer.project, id=folder_id,
@@ -83,7 +83,7 @@ def file_edit(request, project_id):
         try:
             data = json.loads(request.body)
             # 编辑按钮是在遍历已存在的文件夹时生成（folderID正常情况下一定不为空），除非有人恶意构造请求
-            folderId = data.get('folderId', '')
+            folderId = data.get('folderId', '')  # 当前操作文件夹id
             if folderId and folderId.isdecimal():
                 folder_object = models.FileRepository.objects.filter(
                     id=int(folderId),
