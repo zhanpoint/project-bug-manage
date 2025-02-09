@@ -1,8 +1,3 @@
-import os
+from utils.aliyun.oss import delete_file
 
-# 添加调试信息来查看所有环境变量
-print("所有环境变量：", dict(os.environ))
-
-# 具体检查OSS相关的环境变量
-print("OSS_ACCESS_KEY_ID:", os.environ.get('OSS_ACCESS_KEY_ID'))
-print("OSS_ACCESS_KEY_SECRET:", os.environ.get('OSS_ACCESS_KEY_SECRET'))
+delete_file('bugtracer---bugmanage', 'Snipaste_2025-01-07_20-17-44.png', 'cn-wuhan-lr')

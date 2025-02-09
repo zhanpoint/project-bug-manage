@@ -118,12 +118,44 @@ def check_bucket_exists(bucket):
 
 # 删除文件
 def delete_file(bucket_name, key, region):
-    import oss2
+    """
+    删除单个oss文件
+    :param bucket_name: OSS bucket名称
+    :param key: 文件key
+    :param region: 区域
+    :return:
+    """
     auth = oss2.ProviderAuthV4(EnvironmentVariableCredentialsProvider())
-    endpoint = f'https://oss-{region}.aliyuncs.com'
-    bucket = oss2.Bucket(auth, endpoint, bucket_name, region=region)
+    bucket = oss2.Bucket(auth, f'https://oss-{region}.aliyuncs.com', bucket_name, region=region)
     try:
         bucket.delete_object(key)
         logging.info(f"File {key} deleted successfully")
     except oss2.exceptions.OssError as e:
         logging.error(f"Failed to delete file: {e}")
+
+
+from Bug_manage.local_settings import alibaba_cloud_access_key_id, alibaba_cloud_access_key_secret
+
+
+def delete_files(bucket_name, keys, region):
+    """
+    批量删除OSS文件
+    :param bucket_name: OSS bucket名称
+    :param keys: 文件key列表，最多支持1000个
+    :param region: 区域
+    """
+    # 创建Bucket实例
+    auth = oss2.Auth(alibaba_cloud_access_key_id, alibaba_cloud_access_key_secret)
+    bucket = oss2.Bucket(auth, f'https://oss-{region}.aliyuncs.com', bucket_name)
+
+    # 由于OSS限制每次最多删除1000个文件，所以需要分批处理
+    chunk_size = 1000
+    for i in range(0, len(keys), chunk_size):
+        chunk_keys = keys[i:i + chunk_size]
+        try:
+            # 批量删除文件，quiet=True表示简单模式，不返回删除结果
+            bucket.batch_delete_objects(chunk_keys)
+        except oss2.exceptions.OssError as e:
+            # 处理删除失败的情况
+            print(f"删除文件失败: {str(e)}")
+            raise e

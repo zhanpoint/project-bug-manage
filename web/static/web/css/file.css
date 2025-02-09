@@ -28,3 +28,25 @@
 .table > tbody > tr > td {
     vertical-align: middle;
 }
+
+
+/* 统一了右侧按钮组的样式和大小 */
+.file-header-right {
+    float: right;
+}
+.file-header-right .btn-group {
+    display: inline-flex;
+    gap: 5px; /* 按钮之间的间距 */
+}
+.file-header-right .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px; /* 图标和文字之间的间距 */
+}
+/* 如果需要调整按钮大小保持一致 */
+.file-header-right .btn-primary,
+.file-header-right .btn-success {
+    height: 34px; /* 统一按钮高度 */
+    padding: 6px 12px; /* 统一内边距 */
+    font-size: 14px; /* 统一字体大小 */
+}

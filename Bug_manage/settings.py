@@ -37,8 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'test.apps.TestConfig',
     'web.apps.WebConfig',
+    'mptt',
 ]
 
 MIDDLEWARE = [
@@ -186,6 +186,15 @@ WEB_WHITE_LIST = [
     'index/'
 ]
 WEB_WHITE_LIST = [prefix + i for i in WEB_WHITE_LIST]
+
+"""
+Django从3.2版本开始引入了DEFAULT_AUTO_FIELD设置，默认是AutoField，但推荐使用BigAutoField以避免主键溢出。
+如果用户没有显式设置这个配置，或者没有在模型的Meta类中指定，就会触发这个警告
+全局解决方案；在settings.py中添加 default_auto_field = 'django.db.models.BigAutoField'
+特定模型解决方案：在每个模型的Meta类中指定 default_auto_field = 'django.db.models.BigAutoField'
+修改DEFAULT_AUTO_FIELD后必须进行数据库迁移
+"""
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 try:
     from .local_settings import *

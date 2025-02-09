@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from mptt.models import MPTTModel, TreeForeignKey
 
 
 # 用户表
@@ -121,16 +122,30 @@ class FileRepository(models.Model):
 
     # 外键关联
     project = models.ForeignKey(verbose_name='所属项目', to='Project', on_delete=models.CASCADE)
-    parent = models.ForeignKey(verbose_name='上级目录', to='self', null=True, blank=True,
-                               related_name='children', on_delete=models.CASCADE)
 
     # 更新信息
     update_user = models.ForeignKey(verbose_name='最后更新者', to='UserInfo', on_delete=models.CASCADE)
     update_datetime = models.DateTimeField(verbose_name='最后更新时间', auto_now=True)
 
-    class Meta:
-        verbose_name = '文件库'
-        verbose_name_plural = verbose_name
+    # 修改parent字段为 TreeForeignKey，MPTT树形结构字段
+    parent = TreeForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='children',
+        verbose_name='父文件夹'
+    )
+
+    # 手动添加 MPTT 所需的字段
+    lft = models.PositiveIntegerField(db_index=True, editable=False, verbose_name='左值', null=True)
+    rght = models.PositiveIntegerField(db_index=True, editable=False, verbose_name='右值', null=True)
+    tree_id = models.PositiveIntegerField(db_index=True, editable=False, verbose_name='树id', null=True)
+    level = models.PositiveIntegerField(db_index=True, editable=False, verbose_name='层级', null=True)
+
+    class MPTTMeta:
+        # 这表示在插入或排序时，将以 name 字段为依据进行排序。
+        order_insertion_by = ['name']
 
     def __str__(self):
         return self.name

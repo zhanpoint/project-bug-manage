@@ -8,7 +8,7 @@
         <div class="panel panel-warning" style="margin-top: 25px">
             <div class="panel-heading">
                 <!-- 添加导航路径 -->
-                <div class="breadcrumb" style="margin: 0; padding: 0; background-color: transparent;">
+                <div class="breadcrumb file-header-left" style="margin: 0; padding: 0; background-color: transparent;">
                     <a href="{% url 'web:file' project_id=request.bugtracer.project.id %}" class="btn btn-link">
                         <i class="fa fa-home" aria-hidden="true"></i> 根目录
                     </a>
@@ -20,11 +20,21 @@
                     {% endfor %}
                 </div>
 
-                <div>
-                    <a type="button" data-toggle="modal" data-target="#mymodal" data-whatever="新建文件夹"
-                       class="btn btn-success btn-sm">
-                        <i class="fa fa-plus-circle"></i>新建文件夹
-                    </a>
+                <div class="file-header-right">
+                    <div class="btn-group">
+                        <!-- 上传文件按钮 -->
+                        <!-- 隐藏原生的文件输入框 -->
+                        <input type="file" name="uploadFile" id="uploadFile" style="display: none;" multiple/>
+                        <!-- 创建一个美化的按钮,这样用户看到的是美化的按钮，但实际操作的是原生的文件选择框 -->
+                        <button class="btn btn-primary" onclick="document.getElementById('uploadFile').click()">
+                            <i class="fa fa-upload"></i> 上传文件
+                        </button>
+                        <!-- 新建文件夹按钮 -->
+                        <a type="button" data-toggle="modal" data-target="#add_edit_modal" data-whatever="新建文件夹"
+                           class="btn btn-success">
+                            <i class="fa fa-plus-circle"></i>新建文件夹
+                        </a>
+                    </div>
                 </div>
             </div>
             <table class="table">
@@ -71,7 +81,7 @@
                         <td>
                             <a class="btn btn-primary btn-xs"
                                data-toggle="modal"
-                               data-target="#mymodal"
+                               data-target="#add_edit_modal"
                                data-whatever="编辑文件夹"
                                data-folder-id="{{ item.id }}"
                                data-folder-name="{{ item.name }}">
@@ -92,7 +102,7 @@
             </table>
         </div>
     </div>
-    <div class="modal fade" id="mymodal" tabindex="-1" role="dialog">
+    <div class="modal fade" id="add_edit_modal" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -155,9 +165,11 @@
 {% endblock %}
 {% block js %}
     <script>
+        const file_add_url = "{% url 'web:file_add' project_id=request.bugtracer.project.id %}";
+        const file_edit_url = "{% url 'web:file_edit' project_id=request.bugtracer.project.id %}";
         $(function () {
             initmodal();  // 根据触发按钮改变模态内容
-            bindAddFolder();  // 绑定新建添加文件夹事件
+            bindAddEditFolder();  // 绑定新建添加文件夹事件
             bindDeleteFolder();  // 绑定删除文件夹事件
         })
 
@@ -192,20 +204,21 @@
             })
         }
 
-        function bindAddFolder() {
+        function bindAddEditFolder() {
             $('#submit_btn').click(function () {
-                let url = location.href;  // 当前请求地址
                 let folderId = $('#folderId').val()  // 获取在隐藏字段中的ID
+                let url = folderId ? file_edit_url : file_add_url;  // 当前请求地址
                 let method = folderId ? 'PUT' : 'POST';  // 编辑模式：PUT，新增模式：POST
                 $.ajax({
                     url: url,
-                    type: "POST",
+                    type: method,
                     headers: {
                         "X-CSRFToken": $('[name="csrfmiddlewaretoken"]').val()
                     },
                     data: {
+                        // 如果是新建模式，folderId为空（需要记录模态框表单中name字段值），如果是编辑模式，folderId为当前文件夹ID
                         'folderId': folderId,
-                        'name': $('#id_name').val(),
+                        'name': $('#id_name').val() || '',
                     },
                     dataType: "json",
                     success: function (data) {

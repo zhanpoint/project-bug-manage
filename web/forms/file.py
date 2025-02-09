@@ -27,8 +27,8 @@ class FileModelForm(BootstrapForm, ModelForm):
             name=name,
             project=self.request.bugtracer.project)
 
-        # 情况1：名称没改变，情况2：改成新名称）以上两种情况均成立
-        # 情况1：如果当前实例已经存在（即有主键），则从查询集中排除当前实例，以避免重复操作
+        # 编辑有两种情况，情况1：名称没改变，情况2：改成新名称）以上两种情况均成立
+        # 针对情况1：如果当前实例已经存在（即有主键），则从查询集中排除当前实例，以避免重复操作
         if self.instance.pk:
             queryset = queryset.exclude(id=self.instance.pk)
 
