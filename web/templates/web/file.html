@@ -13,7 +13,7 @@
                         <i class="fa fa-home" aria-hidden="true"></i> 根目录
                     </a>
                     {% for item in breadcrumb_list %}
-                        <a href="{% url 'web:file' project_id=request.bugtracer.project.id %}?folder={{ item.id }}"
+                        <a href="{% url 'web:file' project_id=request.bugtracer.project.id %}?folder_id={{ item.id }}"
                            class="btn btn-link">
                             <i class="fa fa-caret-right"></i> {{ item.name }}
                         </a>
@@ -55,7 +55,7 @@
                                 <i class="fa fa-file" style="background-color: #AEAEAE"></i>
                                 {{ item.name }}
                             {% else %}
-                                <a href="{% url 'web:file' project_id=request.bugtracer.project.id %}?folder={{ item.id }}">
+                                <a href="{% url 'web:file' project_id=request.bugtracer.project.id %}?folder_id={{ item.id }}">
                                     <i class="fa fa-folder" style="color: #b58900"></i>
                                     {{ item.name }}
                                 </a>
@@ -211,39 +211,45 @@
                 let url = folderId ? file_edit_url : file_add_url;  // 当前请求地址
                 let method = folderId ? 'PUT' : 'POST';  // 编辑模式：PUT，新增模式：POST
 
-                // 构造要发送的数据
-                let data = JSON.stringify({
-                    // 如果是新建模式，folderId为空（需要记录模态框表单中name字段值），如果是编辑模式，folderId为当前文件夹ID
-                    'folderId': folderId,
-                    'name': $('#id_name').val() || ''
-                })
-
-                $.ajax({
+                // 根据请求类型决定如何处理数据
+                let ajaxOptions = {
                     url: url,
                     type: method,
                     headers: {
-                        "X-CSRFToken": $('[name="csrfmiddlewaretoken"]').val(),
-                        // 表示请求体中的数据格式是JSON。服务器会根据这个头部信息来解析请求体中的数据
-                        "Content-Type": "application/json"
+                        // 添加 CSRF 令牌
+                        "X-CSRFToken": $('[name="csrfmiddlewaretoken"]').val()
                     },
-                    data: data,  // 发送JSON字符串
                     dataType: "json",
                     success: function (data) {
                         if (data.status) {
-                            // 1. 关闭模态框
                             $('#add_edit_modal').modal('hide');
-                            // 2. 刷新页面
                             window.location.reload();
                         } else {
-                            // 表单校验失败，显示错误信息
                             $.each(data.error, function (key, value) {
                                 $("#id_" + key).next().text(value[0]);
                             })
                         }
                     }
-                })
-            })
+                };
 
+                if (method === 'PUT') {
+                    // PUT 请求时构造 JSON 数据
+                    ajaxOptions.headers["Content-Type"] = "application/json";  // 设置请求体中的数据格式为JSON
+                    ajaxOptions.data = JSON.stringify({  // 将数据转换为JSON字符串
+                        'folderId': folderId,
+                        'name': $('#id_name').val() || ''
+                    });
+                } else {
+                    // POST 请求时使用表单数据
+                    let formData = new FormData();  // 创建 FormData 对象
+                    formData.append('name', $('#id_name').val() || '');  // 将表单中的name字段值添加到FormData对象中
+                    ajaxOptions.data = formData;  // 配置ajaxOptions，设置data为FormData对象
+                    // POST 请求不需要设置 Content-Type，让浏览器自动处理数据格式
+                    ajaxOptions.processData = false;
+                    ajaxOptions.contentType = false;
+                }
+                $.ajax(ajaxOptions);
+            })
         }
 
         function bindDeleteFolder() {
@@ -299,9 +305,9 @@
             // .fadeOut()：使用淡出动画效果
             // .remove()：动画完成后删除元素
             $(`<div class="alert alert-${alertClass}" style="position: fixed; top: 30px; left: 50%;
-        transform: translateX(-50%); text-align: center; z-index: 9999;">
-                <i class="fa fa-${icon}"></i> ${msg}
-            </div>`).appendTo('body').delay(1500).fadeOut(function () {
+transform: translateX(-50%); text-align: center; z-index: 9999;">
+<i class="fa fa-${icon}"></i> ${msg}
+</div>`).appendTo('body').delay(1500).fadeOut(function () {
                 $(this).remove();
             });
         }
