@@ -113,7 +113,7 @@ def file_edit(request, project_id):
 def file_delete(request, project_id):
     """删除文件夹/文件"""
     if request.method == 'POST':  # 最好使用delete请求
-        folderId = request.POST.get('folderId', '')  # 操作的文件夹ID
+        folderId = request.POST.get('folderId')  # 操作的文件夹ID
 
         if not folderId or not folderId.isdecimal():
             return JsonResponse({'status': False, 'error': '参数错误'})
@@ -122,6 +122,7 @@ def file_delete(request, project_id):
             id=int(folderId),
             project=request.bugtracer.project,
         ).first()
+
         if not folder_object:
             return JsonResponse({'status': False, 'error': '文件或文件夹不存在'})
 

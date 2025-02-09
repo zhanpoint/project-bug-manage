@@ -264,6 +264,11 @@
             // 点击删除按钮
             $('.delete_btn').click(function () {
                 deleteId = $(this).data('id');  // 获取当前删除的文件夹ID
+                // 添加前端验证(提供更好的用户体验，并减少无效请求发送到服务器)
+                if (!deleteId) {
+                    showMessage('error', '无效的文件/文件夹ID');
+                    return;
+                }
                 $('#folderToDelete').text($(this).data('name'));  // 设置要删除的文件夹名称
                 // 移除了重复的 modal('show') 调用，因为 Bootstrap 的 data-toggle="modal" 已经会处理模态框的显示
                 // $('#deleteModal').modal('show');
