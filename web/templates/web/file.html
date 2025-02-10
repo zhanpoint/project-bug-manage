@@ -166,6 +166,7 @@
     </div>
 {% endblock %}
 {% block js %}
+    <script src="https://gosspublic.alicdn.com/aliyun-oss-sdk-6.17.1.min.js"></script>
     <script>
         const file_add_url = "{% url 'web:file_add' project_id=request.bugtracer.project.id %}";
         const file_edit_url = "{% url 'web:file_edit' project_id=request.bugtracer.project.id %}";
@@ -266,7 +267,7 @@
                 deleteId = $(this).data('id');  // 获取当前删除的文件夹ID
                 // 添加前端验证(提供更好的用户体验，并减少无效请求发送到服务器)
                 if (!deleteId) {
-                    showMessage('error', '无效的文件/文件夹ID');
+                    showMessageDelete('error', '无效的文件/文件夹ID');
                     return;
                 }
                 $('#folderToDelete').text($(this).data('name'));  // 设置要删除的文件夹名称
@@ -291,11 +292,11 @@
                     success: function (res) {
                         if (res.status) {
                             $('#deleteModal').modal('hide');
-                            showMessage('success', '删除成功');
+                            showMessageDelete('success', '删除成功');
                             // 让用户能看到"删除成功"的提示消息（如果立即刷新页面，提示消息可能还没来得及看到就消失了）
                             setTimeout(() => window.location.reload(), 1500);
                         } else {
-                            showMessage('error', res.error || '删除失败');
+                            showMessageDelete('error', res.error || '删除失败');
                             $btn.prop('disabled', false)
                                 .html('<i class="fa fa-trash"></i> 确定删除');
                         }
@@ -305,7 +306,7 @@
         }
 
         // 显示消息提示
-        function showMessage(type, msg) {
+        function showMessageDelete(type, msg) {
             // 1. 根据type参数决定使用哪个图标和样式类
             let icon = type === 'success' ? 'check-circle' : 'times-circle';  // 设置图标(对钩：叉号)
             let alertClass = type === 'success' ? 'success' : 'danger';  // 设置样式（红色：绿色）
@@ -321,6 +322,102 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
 </div>`).appendTo('body').delay(1500).fadeOut(function () {
                 $(this).remove();
             });
+        }
+
+        // 文件上传处理
+        $('#uploadFile').change(async function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                // 显示上传进度提示
+                showMessageUpload('info', '文件上传中...');
+
+                // 获取上传凭证
+                const res = await fetch(`{% url 'web:file_credentials' project_id=request.bugtracer.project.id %}`);
+                const {status, data, error} = await res.json();
+
+                if (!status) {
+                    showMessageUpload('error', error || '获取上传凭证失败');
+                    return;
+                }
+
+                // 初始化OSS客户端
+                const client = new OSS({
+                    ...data,
+                    secure: true
+                });
+
+                // 生成文件路径
+                const folder_id = new URLSearchParams(window.location.search).get('folder_id') || '';
+                const key = `${folder_id}/${file.name}`;
+
+                // 上传文件
+                await client.multipartUpload(key, file, {
+                    progress: p => showProgress(Math.floor(p * 100))
+                });
+
+                // 保存文件信息
+                const formData = new FormData();
+                formData.append('name', file.name);
+                formData.append('key', key);
+                formData.append('size', file.size);
+                formData.append('type', file.type);
+                formData.append('parent', folder_id);
+
+                const saveRes = await fetch("{% url 'web:file_upload' project_id=request.bugtracer.project.id %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: formData
+                });
+
+                const saveResult = await saveRes.json();
+                if (!saveResult.status) {
+                    showMessageUpload('error', saveResult.error || '保存文件信息失败');
+                    return;
+                }
+
+                showMessageUpload('success', '上传成功');
+                setTimeout(() => window.location.reload(), 1000);
+
+            } catch (err) {
+                showMessageUpload('error', err.message || '上传失败');
+            }
+        });
+
+        // 显示上传进度
+        function showProgress(percentage) {
+            // 更新或创建进度提示
+            showMessageUpload('info', `上传进度: ${percentage}%`);
+        }
+
+        // 优化消息提示函数
+        function showMessageUpload(type, msg) {
+            // 移除已存在的提示
+            $('.alert-message').remove();
+
+            // 配置提示样式
+            const config = {
+                success: {icon: 'check-circle', class: 'success'},
+                error: {icon: 'times-circle', class: 'danger'},
+                info: {icon: 'info-circle', class: 'info'}
+            }[type] || {icon: 'info-circle', class: 'info'};
+
+            // 创建提示元素
+            const alert = $(`
+                <div class="alert alert-${config.class} alert-message"
+                     style="position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+                            z-index: 9999; padding: 10px 20px; border-radius: 4px;">
+                    <i class="fa fa-${config.icon}"></i> ${msg}
+                </div>
+            `).appendTo('body');
+
+            // 如果是成功或错误提示，自动消失
+            if (type !== 'info') {
+                alert.delay(1500).fadeOut(() => alert.remove());
+            }
         }
     </script>
 {% endblock %}

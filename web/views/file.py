@@ -7,6 +7,8 @@ from web.forms.file import FileModelForm
 from django.http import JsonResponse
 from utils.aliyun.oss import delete_file, delete_files
 from django.db.models import Sum  # 从 Django 的数据库聚合函数模块中导入 Sum
+import json
+from utils.aliyun.sts import get_credential
 
 
 def file(request, project_id):
@@ -137,41 +139,109 @@ def file_delete(request, project_id):
             # 在数据库中删除文件
             folder_object.delete()
         else:  # 删除文件夹
-            # 获取所有子文件（不包括文件夹）
-            all_files = models.FileRepository.objects.filter(
-                project=request.bugtracer.project,
-                file_type=1
-            ).filter(
-                parent__in=models.FileRepository.objects.filter(
-                    tree_id=folder_object.tree_id,
-                    lft__gte=folder_object.lft,
-                    rght__lte=folder_object.rght
-                )
-            )
+            try:
+                # 使用MPTT的get_descendants()方法获取所有子节点（包括文件和文件夹）
+                descendants = folder_object.get_descendants()
 
-            # 计算所有文件的总大小
-            # 对 file_size 字段进行求和，并将结果命名为 'total'，获取名为 'total' 的聚合结果， 如果结果为 None（没有文件时），则返回 0
-            total_size = all_files.aggregate(total=Sum('file_size'))['total'] or 0
+                # 获取所有子文件（不包括文件夹）
+                all_files = descendants.filter(file_type=1)
 
-            # 获取所有文件的key
-            file_keys = list(all_files.values_list('key', flat=True))
+                # 计算所有文件的总大小
+                # 对 file_size 字段进行求和，并将结果命名为 'total'，获取名为 'total' 的聚合结果， 如果结果为 None（没有文件时），则返回 0
+                total_size = all_files.aggregate(total=Sum('file_size'))['total'] or 0
 
-            if file_keys:
-                # 批量删除阿里云OSS文件
-                delete_files(
-                    bucket_name=request.bugtracer.project.bucket_name,
-                    keys=file_keys,
-                    region=request.bugtracer.project.region
-                )
+                # 获取所有文件的key
+                file_keys = list(all_files.values_list('key', flat=True))
 
-                # 更新项目剩余空间
-                request.bugtracer.project.remain_space += total_size
-                request.bugtracer.project.save()
+                if file_keys:
+                    # 批量删除阿里云OSS文件
+                    delete_files(
+                        bucket_name=request.bugtracer.project.bucket_name,
+                        keys=file_keys,
+                        region=request.bugtracer.project.region
+                    )
 
-            # 删除文件夹（会级联删除所有子文件和子文件夹）
-            folder_object.delete()
+                    # 更新项目剩余空间
+                    request.bugtracer.project.remain_space += total_size
+                    request.bugtracer.project.save()
 
-        return JsonResponse({'status': True})
-
+                # 删除文件夹（会级联删除所有子文件和子文件夹）
+                folder_object.delete()
+            except Exception as e:
+                return JsonResponse({'status': False, 'error': f'删除文件夹失败：{str(e)}'})
+            return JsonResponse({'status': True})
     else:
         return JsonResponse({'status': False, 'error': '请求方法错误'})
+
+
+def file_upload(request, project_id):
+    """处理文件上传"""
+    if request.method == 'POST':
+        try:
+            # 获取上传文件信息
+            parent_id = request.POST.get('parent', '')
+            file_name = request.POST.get('name')
+            file_size = int(request.POST.get('size', 0))
+            file_key = request.POST.get('key')
+            file_type = request.POST.get('type', '')
+
+            # 检查项目剩余空间（转换为KB）
+            if request.bugtracer.project.remain_space < (file_size / 1024):
+                return JsonResponse({'status': False, 'error': '项目空间不足'})
+
+            # 获取父文件夹对象（如果有）
+            parent_obj = None
+            if parent_id and parent_id.isdigit():
+                parent_obj = models.FileRepository.objects.filter(
+                    id=int(parent_id),
+                    project=request.bugtracer.project,
+                    file_type=2  # 确保父对象是文件夹
+                ).first()
+
+            # 获取文件扩展名
+            file_extension = file_type.split('/')[-1] if file_type else file_name.split('.')[-1]
+
+            # 创建文件记录
+            models.FileRepository.objects.create(
+                name=file_name,
+                file_type=1,  # 1表示文件
+                file_size=file_size,
+                file_path=file_key,
+                key=file_key,
+                file_extension=file_extension,
+                update_user=request.bugtracer.user,
+                project=request.bugtracer.project,
+                parent=parent_obj
+            )
+
+            # 更新项目剩余空间（转换为KB）
+            request.bugtracer.project.remain_space -= (file_size / 1024)
+            request.bugtracer.project.save()
+
+            return JsonResponse({'status': True})
+
+        except Exception as e:
+            return JsonResponse({'status': False, 'error': str(e)})
+
+    return JsonResponse({'status': False, 'error': '请求方法错误'})
+
+
+def file_credentials(request, project_id):
+    """获取阿里云STS临时凭证，并返回"""
+    try:
+        # 获取当前项目信息
+        project = request.bugtracer.project
+        # 获取STS临时凭证
+        credentials = get_credential(
+            project.bucket_name,
+            project.region
+        )
+        return JsonResponse({
+            'status': True,
+            'data': credentials
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': False,
+            'error': str(e)
+        })

@@ -40,6 +40,10 @@ urlpatterns = [
         re_path(r'^file/add/$', file.file_add, name='file_add'),
         re_path(r'^file/edit/$', file.file_edit, name='file_edit'),
         re_path(r'^file/delete/$', file.file_delete, name='file_delete'),
+        re_path(r'^file/upload/$', file.file_upload, name='file_upload'),
+        # STS临时凭证
+        re_path(r'^file/credentials/$', file.file_credentials, name='file_credentials'),
+        # 项目设置功能
         re_path(r'^setting/$', projectmenu.setting, name='setting')
     ], None)),
 ]

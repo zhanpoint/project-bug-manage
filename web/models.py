@@ -107,7 +107,7 @@ class Wiki(models.Model):
 
 
 # 文件表
-class FileRepository(models.Model):
+class FileRepository(MPTTModel):
     file_type_choices = [
         (1, '文件'),
         (2, '文件夹')
@@ -119,10 +119,8 @@ class FileRepository(models.Model):
     file_path = models.CharField(verbose_name='文件路径', max_length=255, null=True, blank=True)
     key = models.CharField(verbose_name='OSS对象存储的key', max_length=128, null=True, blank=True)
     file_extension = models.CharField(verbose_name='文件后缀', max_length=32, null=True, blank=True)
-
     # 外键关联
     project = models.ForeignKey(verbose_name='所属项目', to='Project', on_delete=models.CASCADE)
-
     # 更新信息
     update_user = models.ForeignKey(verbose_name='最后更新者', to='UserInfo', on_delete=models.CASCADE)
     update_datetime = models.DateTimeField(verbose_name='最后更新时间', auto_now=True)
@@ -137,12 +135,7 @@ class FileRepository(models.Model):
         verbose_name='父文件夹'
     )
 
-    # 手动添加 MPTT 所需的字段
-    lft = models.PositiveIntegerField(db_index=True, editable=False, verbose_name='左值', null=True)
-    rght = models.PositiveIntegerField(db_index=True, editable=False, verbose_name='右值', null=True)
-    tree_id = models.PositiveIntegerField(db_index=True, editable=False, verbose_name='树id', null=True)
-    level = models.PositiveIntegerField(db_index=True, editable=False, verbose_name='层级', null=True)
-
+    #  MPTT 字段（lft、rght、tree_id、level）会由 MPTTModel 自动管理，无需手动添加。
     class MPTTMeta:
         # 这表示在插入或排序时，将以 name 字段为依据进行排序。
         order_insertion_by = ['name']
