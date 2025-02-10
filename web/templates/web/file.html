@@ -305,7 +305,7 @@
             });
         }
 
-        // 显示消息提示
+        // 删除消息提示
         function showMessageDelete(type, msg) {
             // 1. 根据type参数决定使用哪个图标和样式类
             let icon = type === 'success' ? 'check-circle' : 'times-circle';  // 设置图标(对钩：叉号)
@@ -325,18 +325,25 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
         }
 
         // 文件上传处理
-        $('#uploadFile').change(async function (e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        $('#uploadFile').change(async function (e) {  // 当用户选择文件时，触发文件输入框的 change 事件,执行异步函数处理文件上传逻辑
+            const file = e.target.files[0];  // 获取选择的第一个文件
+            if (!file) return;  // 如果没有选择文件，直接返回
 
             try {
                 // 显示上传进度提示
                 showMessageUpload('info', '文件上传中...');
 
-                // 获取上传凭证
+                // 向后端请求阿里云OSS的临时访问凭证
+                /*
+                    await fetch(url, options) 发起一个到指定 URL 的 HTTP 请求。
+                    await 关键字确保代码会等待 fetch 请求完成并返回响应，然后再继续执行后续代码。
+                    fetch 返回一个 Promise，await 会暂停当前函数的执行，直到 Promise 被解决（resolve）或拒绝（reject），从而获取到最终的响应结果
+                */
                 const res = await fetch(`{% url 'web:file_credentials' project_id=request.bugtracer.project.id %}`);
+                // 解构响应数据获取状态、凭证数据和错误信息
                 const {status, data, error} = await res.json();
 
+                // 如果临时凭证获取失败，显示错误消息并返回
                 if (!status) {
                     showMessageUpload('error', error || '获取上传凭证失败');
                     return;
@@ -344,31 +351,31 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
 
                 // 初始化OSS客户端
                 const client = new OSS({
-                    ...data,
-                    secure: true
+                    ...data,  // 展开data对象，包含accessKeyId、accessKeySecret等凭证信息
+                    secure: true  // 使用HTTPS协议
                 });
 
                 // 生成文件路径
-                const folder_id = new URLSearchParams(window.location.search).get('folder_id') || '';
-                const key = `${folder_id}/${file.name}`;
+                const folder_id = new URLSearchParams(window.location.search).get('folder_id') || '';  // 从URL参数中获取当前文件夹ID
+                const key = `${file.name}`;  // 生成OSS中的文件存储路径
 
                 // 上传文件
-                await client.multipartUpload(key, file, {
-                    progress: p => showProgress(Math.floor(p * 100))
+                await client.multipartUpload(key, file, {  //
+                    progress: p => showProgress(Math.floor(p * 100))  // 回调函数 progress，将上传进度转换为百分比并调用 showProgress 显示
                 });
 
                 // 保存文件信息
-                const formData = new FormData();
-                formData.append('name', file.name);
+                const formData = new FormData();  // 创建FormData对象存储文件信息
+                formData.append('name', file.name);  // 使用append方法添加键值对，每个键对应一个表单字段名,值可以是字符串或 Blob 类型（如文件）
                 formData.append('key', key);
                 formData.append('size', file.size);
                 formData.append('type', file.type);
                 formData.append('parent', folder_id);
-
+                // 发送POST请求到后端保存文件记录
                 const saveRes = await fetch("{% url 'web:file_upload' project_id=request.bugtracer.project.id %}", {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value  // CSRF令牌确保安全
                     },
                     body: formData
                 });

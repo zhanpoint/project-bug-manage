@@ -9,6 +9,7 @@ from utils.aliyun.oss import delete_file, delete_files
 from django.db.models import Sum  # 从 Django 的数据库聚合函数模块中导入 Sum
 import json
 from utils.aliyun.sts import get_credential
+from Bug_manage import local_settings
 
 
 def file(request, project_id):
@@ -186,7 +187,7 @@ def file_upload(request, project_id):
             file_type = request.POST.get('type', '')
 
             # 检查项目剩余空间（转换为KB）
-            if request.bugtracer.project.remain_space < (file_size / 1024):
+            if request.bugtracer.project.remain_space < (file_size):
                 return JsonResponse({'status': False, 'error': '项目空间不足'})
 
             # 获取父文件夹对象（如果有）
@@ -199,7 +200,8 @@ def file_upload(request, project_id):
                 ).first()
 
             # 获取文件扩展名
-            file_extension = file_type.split('/')[-1] if file_type else file_name.split('.')[-1]
+            # file_extension = file_type.split('/')[-1] if file_type else file_name.split('.')[-1]
+            file_extension = file_name.split('.')[-1]
 
             # 创建文件记录
             models.FileRepository.objects.create(
@@ -215,7 +217,7 @@ def file_upload(request, project_id):
             )
 
             # 更新项目剩余空间（转换为KB）
-            request.bugtracer.project.remain_space -= (file_size / 1024)
+            request.bugtracer.project.remain_space -= (file_size)
             request.bugtracer.project.save()
 
             return JsonResponse({'status': True})
@@ -229,13 +231,13 @@ def file_upload(request, project_id):
 def file_credentials(request, project_id):
     """获取阿里云STS临时凭证，并返回"""
     try:
-        # 获取当前项目信息
-        project = request.bugtracer.project
         # 获取STS临时凭证
         credentials = get_credential(
-            project.bucket_name,
-            project.region
+            local_settings.alibaba_cloud_access_key_id,
+            local_settings.alibaba_cloud_access_key_secret,
+            local_settings.alibaba_cloud_role_arn,
         )
+
         return JsonResponse({
             'status': True,
             'data': credentials
