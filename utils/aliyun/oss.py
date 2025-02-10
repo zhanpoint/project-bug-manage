@@ -5,6 +5,7 @@ import os
 import logging
 import time
 import random
+from Bug_manage.local_settings import alibaba_cloud_access_key_id, alibaba_cloud_access_key_secret
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -38,8 +39,11 @@ bucket_name = generate_unique_bucket_name()
 bucket = oss2.Bucket(auth, endpoint, bucket_name, region=region)
 
 
-def create_bucket(bucket):
+def create_bucket(bucket_name, region):
     try:
+        # 创建Bucket实例
+        auth = oss2.Auth(alibaba_cloud_access_key_id, alibaba_cloud_access_key_secret)
+        bucket = oss2.Bucket(auth, f'https://oss-{region}.aliyuncs.com', bucket_name)
         # 创建一个私有权限的存储桶
         bucket.create_bucket(oss2.models.BUCKET_ACL_PRIVATE)
         logging.info("Bucket created successfully")
@@ -132,9 +136,6 @@ def delete_file(bucket_name, key, region):
         logging.info(f"File {key} deleted successfully")
     except oss2.exceptions.OssError as e:
         logging.error(f"Failed to delete file: {e}")
-
-
-from Bug_manage.local_settings import alibaba_cloud_access_key_id, alibaba_cloud_access_key_secret
 
 
 def delete_files(bucket_name, keys, region):

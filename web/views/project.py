@@ -24,9 +24,7 @@ def project(request):
             bucket_name = f"bugtracer---{newproject.project_name}"
             newproject.bucket_name = bucket_name
             region = 'cn-wuhan-lr'
-            endpoint = f'https://oss-{region}.aliyuncs.com'
-            bucket = oss2.Bucket(oss.auth, endpoint, bucket_name, region=region)
-            oss.create_bucket(bucket)
+            oss.create_bucket(bucket_name, region)
 
             newproject.save()
 

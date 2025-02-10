@@ -231,13 +231,21 @@ def file_upload(request, project_id):
 def file_credentials(request, project_id):
     """获取阿里云STS临时凭证，并返回"""
     try:
+        project = request.bugtracer.project
         # 获取STS临时凭证
-        credentials = get_credential(
+        sts_token = get_credential(
             local_settings.alibaba_cloud_access_key_id,
             local_settings.alibaba_cloud_access_key_secret,
             local_settings.alibaba_cloud_role_arn,
         )
-
+        # 将STS Token对象转换为可序列化的字典
+        credentials = {
+            'accessKeyId': sts_token.access_key_id,
+            'accessKeySecret': sts_token.access_key_secret,
+            'securityToken': sts_token.security_token,
+            'region': project.region,  # 从项目配置获取
+            'bucket': project.bucket_name,  # 从项目配置获取
+        }
         return JsonResponse({
             'status': True,
             'data': credentials
