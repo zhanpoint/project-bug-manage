@@ -364,7 +364,7 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                 const key = `${Date.now()}-${file.name}`;  // 生成OSS中的文件存储路径（注意是否符合阿里云oss的key规范）
 
                 // 上传文件
-                await client.multipartUpload(key, file, {  //
+                await client.multipartUpload(key, file, {  // 分片上传通常使用PUT方法上传每个分片
                     progress: p => showProgress(Math.floor(p * 100))  // 回调函数 progress，将上传进度转换为百分比并调用 showProgress 显示
                 });
 

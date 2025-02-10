@@ -74,6 +74,7 @@ def create_bucket_with_cors(bucket_name, region, allowed_origins=None, allowed_m
         if allowed_origins is None:
             allowed_origins = ['*']
         if allowed_methods is None:
+            # 阿里云OSS SDK在上传文件时自动使用了PUT方法，当上传文件时需要正确配置CORS设置包含PUT方法的规则
             allowed_methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD']
 
         # 创建CORS规则
