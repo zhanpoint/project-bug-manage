@@ -6,7 +6,7 @@ import logging
 import time
 import random
 
-from oss2.models import CorsRule
+from oss2.models import CorsRule, BucketCors
 
 from Bug_manage.local_settings import alibaba_cloud_access_key_id, alibaba_cloud_access_key_secret
 
@@ -85,8 +85,11 @@ def create_bucket_with_cors(bucket_name, region, allowed_origins=None, allowed_m
             max_age_seconds=86400
         )
 
+        # 创建BucketCors对象并添加规则
+        cors = BucketCors([rule])  # 关键修改：用列表包裹规则
+
         # 设置CORS规则
-        bucket.put_bucket_cors([rule])
+        bucket.put_bucket_cors(cors)  # 修改参数类型
 
         return {
             'status': 'success',
@@ -98,6 +101,7 @@ def create_bucket_with_cors(bucket_name, region, allowed_origins=None, allowed_m
             'status': 'error',
             'message': f'Server error: {str(e)}'
         }
+
     except oss2.exceptions.ClientError as e:
         return {
             'status': 'error',

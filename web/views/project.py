@@ -25,7 +25,7 @@ def project(request):
             newproject.bucket_name = bucket_name
             region = 'cn-wuhan-lr'
             oss.create_bucket_with_cors(bucket_name, region, [
-                'http://127.0.0.1:8004', ], ['GET', 'POST'])
+                'http://127.0.0.1:8004', ], ['GET', 'POST', ])
 
             newproject.save()
 
