@@ -237,14 +237,16 @@ def file_credentials(request, project_id):
             local_settings.alibaba_cloud_access_key_id,
             local_settings.alibaba_cloud_access_key_secret,
             local_settings.alibaba_cloud_role_arn,
+            duration_seconds=1800  # 设置临时凭证有效期为半小时（注意：如果本参数大于RAM角色最大会话时间会报错）
         )
         # 将STS Token对象转换为可序列化的字典
         credentials = {
             'accessKeyId': sts_token.access_key_id,
             'accessKeySecret': sts_token.access_key_secret,
-            'stsToken': sts_token.security_token,
+            'securityToken': sts_token.security_token,
             'region': project.region,  # 从项目配置获取
             'bucket': project.bucket_name,  # 从项目配置获取
+            # 'expiration': sts_token.expiration  # 前端SDK会自动处理令牌过期问题，不需要返回这个字段
         }
         return JsonResponse({
             'status': True,
