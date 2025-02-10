@@ -166,7 +166,7 @@
     </div>
 {% endblock %}
 {% block js %}
-    <script src="https://gosspublic.alicdn.com/aliyun-oss-sdk-6.17.1.min.js"></script>
+    <script src="{% static 'web/js/http_gosspublic.alicdn.com_aliyun-oss-sdk-6.17.1.min.js' %}"></script>
     <script>
         const file_add_url = "{% url 'web:file_add' project_id=request.bugtracer.project.id %}";
         const file_edit_url = "{% url 'web:file_edit' project_id=request.bugtracer.project.id %}";
@@ -351,13 +351,17 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
 
                 // 初始化OSS客户端
                 const client = new OSS({
-                    ...data,  // 展开data对象，包含accessKeyId、accessKeySecret等凭证信息
+                    accessKeyId: data.accessKeyId,
+                    accessKeySecret: data.accessKeySecret,
+                    stsToken: data.stsToken,          // 注意这里是stsToken
+                    region: data.region,
+                    bucket: data.bucket,
                     secure: true  // 使用HTTPS协议
                 });
 
                 // 生成文件路径
                 const folder_id = new URLSearchParams(window.location.search).get('folder_id') || '';  // 从URL参数中获取当前文件夹ID
-                const key = `${file.name}`;  // 生成OSS中的文件存储路径
+                const key = `${Date.now()}-${file.name}`;  // 生成OSS中的文件存储路径
 
                 // 上传文件
                 await client.multipartUpload(key, file, {  //

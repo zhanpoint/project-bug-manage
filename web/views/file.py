@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from utils.aliyun.oss import delete_file, delete_files
 from django.db.models import Sum  # 从 Django 的数据库聚合函数模块中导入 Sum
 import json
-from utils.aliyun.sts import get_credential
+from utils.aliyun.sts import fetch_sts_token
 from Bug_manage import local_settings
 
 
@@ -233,7 +233,7 @@ def file_credentials(request, project_id):
     try:
         project = request.bugtracer.project
         # 获取STS临时凭证
-        sts_token = get_credential(
+        sts_token = fetch_sts_token(
             local_settings.alibaba_cloud_access_key_id,
             local_settings.alibaba_cloud_access_key_secret,
             local_settings.alibaba_cloud_role_arn,
@@ -242,7 +242,7 @@ def file_credentials(request, project_id):
         credentials = {
             'accessKeyId': sts_token.access_key_id,
             'accessKeySecret': sts_token.access_key_secret,
-            'securityToken': sts_token.security_token,
+            'stsToken': sts_token.security_token,
             'region': project.region,  # 从项目配置获取
             'bucket': project.bucket_name,  # 从项目配置获取
         }

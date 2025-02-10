@@ -24,7 +24,8 @@ def project(request):
             bucket_name = f"bugtracer---{newproject.project_name}"
             newproject.bucket_name = bucket_name
             region = 'cn-wuhan-lr'
-            oss.create_bucket(bucket_name, region)
+            oss.create_bucket_with_cors(bucket_name, region, [
+                'http://127.0.0.1:8004', ], ['GET', 'POST'])
 
             newproject.save()
 

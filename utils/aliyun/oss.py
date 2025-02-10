@@ -5,6 +5,9 @@ import os
 import logging
 import time
 import random
+
+from oss2.models import CorsRule
+
 from Bug_manage.local_settings import alibaba_cloud_access_key_id, alibaba_cloud_access_key_secret
 
 # 配置日志
@@ -49,6 +52,57 @@ def create_bucket(bucket_name, region):
         logging.info("Bucket created successfully")
     except oss2.exceptions.OssError as e:
         logging.error(f"Failed to create bucket: {e}")
+
+
+def create_bucket_with_cors(bucket_name, region, allowed_origins=None, allowed_methods=None):
+    """
+    创建OSS桶并设置CORS规则
+
+    Args:
+        bucket_name (str): 桶名称
+        allowed_origins (list): 允许的域名列表
+        allowed_methods (list): 允许的HTTP方法列表
+    """
+    try:
+        auth = oss2.Auth(alibaba_cloud_access_key_id, alibaba_cloud_access_key_secret)
+        bucket = oss2.Bucket(auth, f'https://oss-{region}.aliyuncs.com', bucket_name)
+
+        # 创建桶
+        bucket.create_bucket(oss2.models.BUCKET_ACL_PRIVATE)
+
+        # 设置默认值
+        if allowed_origins is None:
+            allowed_origins = ['*']
+        if allowed_methods is None:
+            allowed_methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD']
+
+        # 创建CORS规则
+        rule = CorsRule(
+            allowed_origins=allowed_origins,
+            allowed_methods=allowed_methods,
+            allowed_headers=['*'],
+            expose_headers=['ETag', 'x-oss-request-id'],
+            max_age_seconds=86400
+        )
+
+        # 设置CORS规则
+        bucket.put_bucket_cors([rule])
+
+        return {
+            'status': 'success',
+            'message': f'Bucket {bucket_name} created successfully with CORS rules'
+        }
+
+    except oss2.exceptions.ServerError as e:
+        return {
+            'status': 'error',
+            'message': f'Server error: {str(e)}'
+        }
+    except oss2.exceptions.ClientError as e:
+        return {
+            'status': 'error',
+            'message': f'Client error: {str(e)}'
+        }
 
 
 def upload_file(bucket, key, data, headers=None):
