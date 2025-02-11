@@ -1,7 +1,6 @@
 import json
 
 from django.shortcuts import render
-
 from web import models
 from web.forms.file import FileModelForm
 from django.http import JsonResponse
@@ -10,6 +9,7 @@ from django.db.models import Sum  # 从 Django 的数据库聚合函数模块中
 import json
 from utils.aliyun.sts import fetch_sts_token
 from Bug_manage import local_settings
+from mptt.managers import TreeManager
 
 
 def file(request, project_id):
@@ -139,6 +139,7 @@ def file_delete(request, project_id):
 
             # 在数据库中删除文件
             folder_object.delete()
+            return JsonResponse({'status': True})
         else:  # 删除文件夹
             try:
                 # 使用MPTT的get_descendants()方法获取所有子节点（包括文件和文件夹）
@@ -175,66 +176,13 @@ def file_delete(request, project_id):
         return JsonResponse({'status': False, 'error': '请求方法错误'})
 
 
-def file_upload(request, project_id):
-    """处理文件上传"""
-    if request.method == 'POST':
-        try:
-            # 获取上传文件信息
-            parent_id = request.POST.get('parent', '')
-            file_name = request.POST.get('name')
-            file_size = int(request.POST.get('size', 0))
-            file_key = request.POST.get('key')
-            file_type = request.POST.get('type', '')
-
-            # 检查项目剩余空间（转换为KB）
-            if request.bugtracer.project.remain_space < (file_size):
-                return JsonResponse({'status': False, 'error': '项目空间不足'})
-
-            # 获取父文件夹对象（如果有）
-            parent_obj = None
-            if parent_id and parent_id.isdigit():
-                parent_obj = models.FileRepository.objects.filter(
-                    id=int(parent_id),
-                    project=request.bugtracer.project,
-                    file_type=2  # 确保父对象是文件夹
-                ).first()
-
-            # 获取文件扩展名
-            # file_extension = file_type.split('/')[-1] if file_type else file_name.split('.')[-1]
-            file_extension = file_name.split('.')[-1]
-
-            # 创建文件记录
-            models.FileRepository.objects.create(
-                name=file_name,
-                file_type=1,  # 1表示文件
-                file_size=file_size,
-                file_path=file_key,
-                key=file_key,
-                file_extension=file_extension,
-                update_user=request.bugtracer.user,
-                project=request.bugtracer.project,
-                parent=parent_obj
-            )
-
-            # 更新项目剩余空间（转换为KB）
-            request.bugtracer.project.remain_space -= (file_size)
-            request.bugtracer.project.save()
-
-            return JsonResponse({'status': True})
-
-        except Exception as e:
-            return JsonResponse({'status': False, 'error': str(e)})
-
-    return JsonResponse({'status': False, 'error': '请求方法错误'})
-
-
 def file_bulk_upload(request, project_id):
     """批量保存文件记录"""
     if request.method == 'POST':
         try:
-            # 验证项目空间
+            # 检查项目剩余空间
             project = request.bugtracer.project
-            total_size = sum(int(f['size']) for f in json.loads(request.POST.get('files')))
+            total_size = sum(int(f['size']) for f in json.loads(request.POST.get('files'))) / 1024  # 将前端发送的字节转换为KB
             if project.remain_space < total_size:
                 return JsonResponse({'status': False, 'error': '项目空间不足'})
 
@@ -248,21 +196,19 @@ def file_bulk_upload(request, project_id):
                     file_type=2
                 ).first()
 
-            # 批量创建记录
+            # 批量创建记录,并逐个保存已生成MPTT字段
             file_objs = [
                 models.FileRepository(
                     name=f['name'],
                     file_type=1,
-                    file_size=f['size'],
+                    file_size=f['size'] / 1024,  # 将前端发送的字节转换为KB
                     key=f['key'],
                     file_extension=f['name'].split('.')[-1],
                     update_user=request.bugtracer.user,
                     project=project,
                     parent=parent_obj
-                ) for f in json.loads(request.POST.get('files'))
+                ).save() for f in json.loads(request.POST.get('files'))
             ]
-
-            models.FileRepository.objects.bulk_create(file_objs)
 
             # 更新项目空间
             project.remain_space -= total_size
