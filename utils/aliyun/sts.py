@@ -28,7 +28,7 @@ class StsToken(object):
 
 def fetch_sts_token(access_key_id, access_key_secret, role_arn, duration_seconds=3600):
     """子用户角色扮演获取临时用户的密钥
-        子用户需要被授权AliyunSTSAssumeRoleAccess
+        子用户需要被授权AliyunSTSAssumeRoleAccess和oss权限
         :param access_key_id: 子用户的 access key id
         :param access_key_secret: 子用户的 access key secret
         :param role_arn: STS角色的Arn

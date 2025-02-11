@@ -326,13 +326,55 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
 
         // 文件上传处理
         $('#uploadFile').change(async function (e) {  // 当用户选择文件时，触发文件输入框的 change 事件,执行异步函数处理文件上传逻辑
-            const file = e.target.files[0];  // 获取选择的第一个文件
-            if (!file) return;  // 如果没有选择文件，直接返回
+            const files = Array.from(e.target.files);  // ：e.target.files 返回的是一个 FileList 对象，而不是一个真正的数组。虽然 FileList 对象可以像数组一样访问其元素，但它不支持数组的所有方法
+            if (!files.length) return;  // 如果没有选择文件，直接返回
 
             try {
-                // 显示上传进度提示
-                showMessageUpload('info', '文件上传中...');
+                // 显示总进度条
+                const totalSize = files.reduce((sum, file) => sum + file.size, 0);  // reduce方法遍历 files 数组，累加每个文件的大小，0是表示累加器sum的初始状值
+                let uploadedSize = 0;  // 初始化已上传文件大小为 0
+                showMessageUpload('info', `准备上传 ${files.length} 个文件（${formatSize(totalSize)}）`);  // 告知用户即将上传的文件数量及总大小
 
+                // 获取OSS凭证
+                const credentials = await fetchCredentials();
+                if (!credentials) return;
+
+                // 初始化OSS客户端
+                const client = new OSS(credentials.config);
+
+                // 上传文件
+                const uploadPromises = files.map(file =>  // 遍历文件列表，为每个文件创建上传任务,每个上传任务会调用 uploadFile 函数，并传递一个回调函数用于更新进度
+                    uploadFile(file, client, (progress) => {
+                        uploadedSize += progress.loaded;
+                        const percent = Math.round((uploadedSize / totalSize) * 100);  // 计算上传进度百分比并四舍五入
+                        showTotalProgress(percent, `${formatSize(uploadedSize)}/${formatSize(totalSize)}`);  // 显示当前进度和已上传/总文件大小
+                    })
+                );
+
+                // 等待所有上传完成
+                const uploadResults = await Promise.allSettled(uploadPromises);  // Promise.allSettled会等待所有的Promise执行完毕，不论成功或失败，返回一个包含所有结果的数组
+
+                // 收集成功结果
+                const successFiles = uploadResults
+                    .filter(r => r.status === 'fulfilled' && r.value)  // 使用filter方法筛选出状态为'fulfilled'且有值的结果
+                    .map(r => r.value);  // 使用map方法提取筛选结果中的值
+
+                // 批量保存到数据库
+                if (successFiles.length) {
+                    const saveResult = await bulkSaveFiles(successFiles);
+                    if (saveResult.status) {
+                        showMessageUpload('success', `成功保存 ${successFiles.length} 个文件`);
+                        setTimeout(() => window.location.reload(), 1000);
+                    }
+                }
+            } catch (err) {
+                showMessageUpload('error', `上传失败: ${err.message}`);
+            }
+        });
+
+        // 辅助函数：获取OSS凭证
+        async function fetchCredentials() {
+            try {
                 // 向后端请求阿里云OSS的临时访问凭证
                 /*
                     await fetch(url, options) 发起一个到指定 URL 的 HTTP 请求。
@@ -349,62 +391,82 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                     return;
                 }
 
-                // 初始化OSS客户端
-                const client = new OSS({
-                    accessKeyId: data.accessKeyId,
-                    accessKeySecret: data.accessKeySecret,
-                    securityToken: data.securityToken,          // 注意这里是stsToken
-                    region: data.region.startsWith('oss-') ? data.region : `oss-${data.region}`,  // 确保region格式为oss-{regionId}（如oss-cn-hangzhou）
-                    bucket: data.bucket,
-                    secure: true  // 使用HTTPS协议
-                });
+                return {
+                    config: {
+                        accessKeyId: data.accessKeyId,
+                        accessKeySecret: data.accessKeySecret,
+                        stsToken: data.securityToken,  // 注意这里是stsToken
+                        region: data.region.startsWith('oss-') ? data.region : `oss-${data.region}`,  // 确保region格式为oss-{regionId}（如oss-cn-hangzhou）
+                        bucket: data.bucket,
+                        secure: true  // 使用HTTPS协议
+                    },
+                };
+            } catch (err) {
+                showMessageUpload('error', err.message);
+                return null;
+            }
+        }
 
-                // 生成文件路径
-                const folder_id = new URLSearchParams(window.location.search).get('folder_id') || '';  // 从URL参数中获取当前文件夹ID
+        // 辅助函数：单个文件上传
+        async function uploadFile(file, client, onProgress) {
+            try {
                 const key = `${Date.now()}-${file.name}`;  // 生成OSS中的文件存储路径（注意是否符合阿里云oss的key规范）
+                let lastLoaded = 0;
 
-                // 上传文件
-                await client.multipartUpload(key, file, {  // 分片上传通常使用PUT方法上传每个分片
-                    progress: p => showProgress(Math.floor(p * 100))  // 回调函数 progress，将上传进度转换为百分比并调用 showProgress 显示
+                const result = await client.multipartUpload(key, file, {
+                    progress: (p, checkpoint) => {
+                        const delta = p.loaded - lastLoaded;
+                        lastLoaded = p.loaded;
+                        onProgress({
+                            loaded: delta,
+                            name: file.name,
+                            percent: Math.floor(p * 100)
+                        });
+                    }
                 });
 
-                // 保存文件信息
-                const formData = new FormData();  // 创建FormData对象存储文件信息
-                formData.append('name', file.name);  // 使用append方法添加键值对，每个键对应一个表单字段名,值可以是字符串或 Blob 类型（如文件）
-                formData.append('key', key);
-                formData.append('size', file.size);
-                formData.append('type', file.type);
+                return {
+                    name: file.name,
+                    key: result.name,
+                    size: file.size,
+                    type: file.type
+                };
+            } catch (err) {
+                showMessageUpload('error', `${file.name} 上传失败: ${err.message}`);
+                return null;
+            }
+        }
+
+        // 辅助函数：批量保存
+        async function bulkSaveFiles(files) {
+            try {
+                const folder_id = new URLSearchParams(window.location.search).get('folder_id') || '';
+                const formData = new FormData();
+
+                formData.append('files', JSON.stringify(files));
                 formData.append('parent', folder_id);
-                // 发送POST请求到后端保存文件记录
-                const saveRes = await fetch("{% url 'web:file_upload' project_id=request.bugtracer.project.id %}", {
+
+                const res = await fetch("{% url 'web:file_bulk_upload' project_id=request.bugtracer.project.id %}", {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value  // CSRF令牌确保安全
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                     },
                     body: formData
                 });
 
-                const saveResult = await saveRes.json();
-                if (!saveResult.status) {
-                    showMessageUpload('error', saveResult.error || '保存文件信息失败');
-                    return;
-                }
-
-                showMessageUpload('success', '上传成功');
-                setTimeout(() => window.location.reload(), 1000);
-
+                return await res.json();
             } catch (err) {
-                showMessageUpload('error', err.message || '上传失败');
+                showMessageUpload('error', `保存失败: ${err.message}`);
+                return {status: false};
             }
-        });
-
-        // 显示上传进度
-        function showProgress(percentage) {
-            // 更新或创建进度提示
-            showMessageUpload('info', `上传进度: ${percentage}%`);
         }
 
-        // 优化消息提示函数
+        // 辅助函数：显示总进度
+        function showTotalProgress(percent, text) {
+            showMessageUpload('info', `总进度: ${percent}% (${text})`);
+        }
+
+        // 辅助函数：消息提示函数
         function showMessageUpload(type, msg) {
             // 移除已存在的提示
             $('.alert-message').remove();
@@ -429,6 +491,18 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
             if (type !== 'info') {
                 alert.delay(1500).fadeOut(() => alert.remove());
             }
+        }
+
+        // 辅助函数：格式化文件大小
+        function formatSize(bytes) {
+            const units = ['B', 'KB', 'MB', 'GB'];  // 定义单位数组：
+            let size = bytes;  // size 变量用于存储当前的文件大小，初始值为传入的 bytes
+            let unitIndex = 0;  // unitIndex 用于记录当前文件的单位索引，初始值为 0
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size /= 1024;
+                unitIndex++;
+            }
+            return `${size.toFixed(1)}${units[unitIndex]}`;
         }
     </script>
 {% endblock %}

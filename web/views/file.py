@@ -228,6 +228,54 @@ def file_upload(request, project_id):
     return JsonResponse({'status': False, 'error': '请求方法错误'})
 
 
+def file_bulk_upload(request, project_id):
+    """批量保存文件记录"""
+    if request.method == 'POST':
+        try:
+            # 验证项目空间
+            project = request.bugtracer.project
+            total_size = sum(int(f['size']) for f in json.loads(request.POST.get('files')))
+            if project.remain_space < total_size:
+                return JsonResponse({'status': False, 'error': '项目空间不足'})
+
+            # 获取父文件夹
+            parent_id = request.POST.get('parent', '')
+            parent_obj = None
+            if parent_id and parent_id.isdigit():
+                parent_obj = models.FileRepository.objects.filter(
+                    id=int(parent_id),
+                    project=project,
+                    file_type=2
+                ).first()
+
+            # 批量创建记录
+            file_objs = [
+                models.FileRepository(
+                    name=f['name'],
+                    file_type=1,
+                    file_size=f['size'],
+                    key=f['key'],
+                    file_extension=f['name'].split('.')[-1],
+                    update_user=request.bugtracer.user,
+                    project=project,
+                    parent=parent_obj
+                ) for f in json.loads(request.POST.get('files'))
+            ]
+
+            models.FileRepository.objects.bulk_create(file_objs)
+
+            # 更新项目空间
+            project.remain_space -= total_size
+            project.save()
+
+            return JsonResponse({'status': True})
+
+        except Exception as e:
+            return JsonResponse({'status': False, 'error': str(e)})
+
+    return JsonResponse({'status': False, 'error': '无效请求'})
+
+
 def file_credentials(request, project_id):
     """获取阿里云STS临时凭证，并返回"""
     try:

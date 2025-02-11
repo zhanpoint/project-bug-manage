@@ -41,6 +41,7 @@ urlpatterns = [
         re_path(r'^file/edit/$', file.file_edit, name='file_edit'),
         re_path(r'^file/delete/$', file.file_delete, name='file_delete'),
         re_path(r'^file/upload/$', file.file_upload, name='file_upload'),
+        re_path(r'^file/bulk_upload/$', file.file_bulk_upload, name='file_bulk_upload'),
         # STS临时凭证
         re_path(r'^file/credentials/$', file.file_credentials, name='file_credentials'),
         # 项目设置功能
