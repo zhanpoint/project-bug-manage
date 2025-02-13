@@ -334,11 +334,14 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
             const remainSpaceKB = {{ request.bugtracer.project.remain_space }};
 
             // 执行校验
-            const validation = validateFilesBeforeUpload(files, maxSingleFileMB, remainSpaceKB);
-            if (!validation.valid) {
-                showMessageUpload('error', validation.message);
-                this.value = '';
-                return;
+            const res = validateFilesBeforeUpload(files, maxSingleFileMB, remainSpaceKB);
+            const validationFiles = res.validFiles;
+            if (!res.valid) {
+                showMessageUpload('error', res.message);
+                if (!validationFiles) {  // 如果合法文件数组为空，则清空文件选择框的值，并返回
+                    this.value = '';
+                    return;
+                }
             }
 
             try {
@@ -355,7 +358,7 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                 const client = new OSS(credentials.config);
 
                 // 上传文件(第一层：文件选择后的回调)
-                const uploadPromises = files.map(file =>  // 遍历文件列表，为每个文件创建上传任务,每个上传任务会调用 uploadFile 函数，并传递一个回调函数用于更新进度
+                const uploadPromises = validationFiles.map(file =>  // 遍历文件列表，为每个文件创建上传任务,每个上传任务会调用 uploadFile 函数，并传递一个回调函数用于更新进度
                     // (第二层：为每个文件创建上传任务时的回调)
                     uploadFile(file, client, (progress) => {
                         uploadedSize += progress.loaded;  // 更新已上传文件大小
@@ -373,7 +376,6 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                     .map(r => r.value);  // 使用map方法提取筛选结果中的值
 
                 // 批量保存到数据库
-
                 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));  // 创建一个延迟函数（Promise 方式实现）
                 if (successFiles.length) {
                     const saveResult = await bulkSaveFiles(successFiles);
@@ -398,25 +400,49 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
             const maxSingleFileBytes = maxSingleFileMB * 1024 * 1024;
             const maxTotalBytes = remainSpaceKB * 1024;
 
-            // 单文件校验
-            const invalidFiles = files.filter(file => file.size > maxSingleFileBytes);
-            if (invalidFiles.length) {
-                return {
-                    valid: false,
-                    message: `以下文件超过${maxSingleFileMB}MB限制：${invalidFiles.map(f => f.name).join(', ')}`
-                };
-            }
-
             // 总容量校验
             const totalSize = files.reduce((sum, file) => sum + file.size, 0);
             if (totalSize > maxTotalBytes) {
                 return {
                     valid: false,
+                    validFiles: [],  // 返回一个空数组，表示没有合法的文件
                     message: `所选文件总大小超过剩余空间（剩余：${formatSize(maxTotalBytes)}）`
                 };
             }
 
-            return {valid: true};
+            // 单文件校验
+            const invalidFiles = files.filter(file => file.size > maxSingleFileBytes);
+            if (invalidFiles.length) {
+                return {
+                    valid: false,
+                    validFiles: files.filter(file => file.size <= maxSingleFileBytes),
+                    message: `以下文件超过${maxSingleFileMB}MB限制：${invalidFiles.map(f => f.name).join(', ')}`
+                };
+            }
+
+
+            // 同名文件校验（从当前页面直接获取已存在文件名，避免额外请求）
+            const existingFiles = Array.from(document.querySelectorAll('.table tbody td:first-child'))
+                .map(td => td.textContent.replace(/^\S+\s+/, '').trim()); // 移除图标和空格
+
+            const {validFiles, conflictFiles} = files.reduce((acc, file) => {  // reduce快速分类合法以及不合法文件
+                existingFiles.includes(file.name) ?
+                    acc.conflictFiles.push(file.name) :
+                    acc.validFiles.push(file);
+                return acc;
+            }, {validFiles: [], conflictFiles: []});
+
+            if (conflictFiles.length) {
+                return {
+                    valid: false,
+                    validFiles: validFiles,
+                    message: `跳过 ${conflictFiles.length} 个重名文件：${conflictFiles.join(', ')}`
+                };
+            }
+            return {
+                valid: true,
+                validFiles: files
+            };
         }
 
         // 辅助函数：获取OSS凭证
@@ -505,8 +531,10 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                 body: formData
             });
 
-            if (!res.status) {
-                showMessageUpload('error', `保存失败: ${res.error}`);
+            const data = await res.json();  // 添加响应解析
+
+            if (!data.status) {
+                showMessageUpload('error', `保存失败: ${data.error}`);
                 return {status: false};
             }
             return {status: true};
@@ -528,7 +556,7 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                         <span class="progress-text"></span>
                     </div>
                     <div style="background-color: #f5f5f5; height: 20px; border-radius: 10px; overflow: hidden;">
-                        <div class="progress-bar" style="width: 0%; height: 100%;
+                        <div class="progress-bar" style="width: 0; height: 100%;
                             background-color: #007bff;
                             transition: width 0.3s ease-in-out;">
                         </div>
