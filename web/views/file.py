@@ -209,11 +209,23 @@ def file_bulk_upload(request, project_id):
                     file_type=2
                 ).first()
 
+            # 3. 名称冲突校验
+            existing_names = set(models.FileRepository.objects.filter(
+                project=project,
+                parent=parent_obj,
+                file_type=1
+            ).values_list('name', flat=True))  # 获取特定项目和父对象下的所有文件名称
+
+            for f in files:
+                if f['name'] in existing_names:
+                    return JsonResponse({'status': False, 'error': f'文件 {f["name"]} 已存在'})
+                existing_names.add(f['name'])
+
             # 批量创建记录,并逐个保存已生成MPTT字段
             [models.FileRepository(
                 name=f['name'],
                 file_type=1,
-                file_size=f['size'] / 1024,  # 将前端发送的字节转换为KB
+                file_size=int(f['size']) / 1024,  # 将前端发送的字节转换为KB
                 key=f['key'],
                 file_extension=f['name'].split('.')[-1],
                 update_user=request.bugtracer.user,

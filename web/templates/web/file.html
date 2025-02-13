@@ -354,10 +354,11 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                 // 初始化OSS客户端
                 const client = new OSS(credentials.config);
 
-                // 上传文件
+                // 上传文件(第一层：文件选择后的回调)
                 const uploadPromises = files.map(file =>  // 遍历文件列表，为每个文件创建上传任务,每个上传任务会调用 uploadFile 函数，并传递一个回调函数用于更新进度
+                    // (第二层：为每个文件创建上传任务时的回调)
                     uploadFile(file, client, (progress) => {
-                        uploadedSize += progress.loaded;
+                        uploadedSize += progress.loaded;  // 更新已上传文件大小
                         const percent = Math.round((uploadedSize / totalSize) * 100);  // 计算上传进度百分比并四舍五入
                         showTotalProgress(percent, `${formatSize(uploadedSize)}/${formatSize(totalSize)}`);  // 显示当前进度和已上传/总文件大小
                     })
@@ -372,11 +373,19 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                     .map(r => r.value);  // 使用map方法提取筛选结果中的值
 
                 // 批量保存到数据库
+
+                const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));  // 创建一个延迟函数（Promise 方式实现）
                 if (successFiles.length) {
                     const saveResult = await bulkSaveFiles(successFiles);
                     if (saveResult.status) {
+                        // 等待1.5秒
+                        await delay(1500);
+                        // 显示保存成功消息
                         showMessageUpload('success', `成功保存 ${successFiles.length} 个文件`);
-                        setTimeout(() => window.location.reload(), 1000);
+                        // 再等待1秒
+                        await delay(1000);
+                        // 刷新页面
+                        window.location.reload();
                     }
                 }
             } catch (err) {
@@ -384,6 +393,7 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
             }
         });
 
+        // 辅助函数：文件容量校验
         function validateFilesBeforeUpload(files, maxSingleFileMB, remainSpaceKB) {
             const maxSingleFileBytes = maxSingleFileMB * 1024 * 1024;
             const maxTotalBytes = remainSpaceKB * 1024;
@@ -444,20 +454,24 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
             }
         }
 
-        // 辅助函数：单个文件上传
+        // 辅助函数：oss文件上传
         async function uploadFile(file, client, onProgress) {
             try {
                 const key = `${Date.now()}-${file.name}`;  // 生成OSS中的文件存储路径（注意是否符合阿里云oss的key规范）
                 let lastLoaded = 0;
 
                 const result = await client.multipartUpload(key, file, {
-                    progress: (p, checkpoint) => {
-                        const delta = p.loaded - lastLoaded;
-                        lastLoaded = p.loaded;
+                    // (第三层：OSS上传进度的回调)
+                    progress: (p) => {  // p是0到1之间的小数,表示上传进度
+                        const loaded = p * file.size;  // 计算实际已上传的字节数
+                        const delta = loaded - lastLoaded;  // 计算本次上传的增量字节
+                        lastLoaded = loaded;  // 更新lastLoaded为当前已上传量
+
+                        // 调用外部传入的进度回调函数
                         onProgress({
-                            loaded: delta,
-                            name: file.name,
-                            percent: Math.floor(p * 100)
+                            loaded: delta,  // 新上传的字节数
+                            name: file.name,  // 文件名
+                            percent: Math.floor(p * 100)  // 当前文件的上传百分比
                         });
                     }
                 });
@@ -476,35 +490,84 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
 
         // 辅助函数：批量保存
         async function bulkSaveFiles(files) {
-            try {
-                const folder_id = new URLSearchParams(window.location.search).get('folder_id') || '';
-                const formData = new FormData();
 
-                formData.append('files', JSON.stringify(files));  // 浏览器FormData的append()方法只能处理字符串或Blob/File对象
-                formData.append('parent', folder_id);
+            const folder_id = new URLSearchParams(window.location.search).get('folder_id') || '';
+            const formData = new FormData();
 
-                const res = await fetch("{% url 'web:file_bulk_upload' project_id=request.bugtracer.project.id %}", {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    },
-                    body: formData
-                });
+            formData.append('files', JSON.stringify(files));  // 浏览器FormData的append()方法只能处理字符串或Blob/File对象
+            formData.append('parent', folder_id);
 
-                return await res.json();
-            } catch (err) {
-                showMessageUpload('error', `保存失败: ${err.message}`);
+            const res = await fetch("{% url 'web:file_bulk_upload' project_id=request.bugtracer.project.id %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: formData
+            });
+
+            if (!res.status) {
+                showMessageUpload('error', `保存失败: ${res.error}`);
                 return {status: false};
             }
+            return {status: true};
         }
 
-        // 辅助函数：显示总进度
+        // 辅助函数：显示进度条
         function showTotalProgress(percent, text) {
-            showMessageUpload('info', `总进度: ${percent}% (${text})`);
+            const validPercent = isNaN(percent) ? 0 : percent;  // 确保percent是有效数字
+
+            // 创建进度条HTML
+            const progressHtml = `
+                <div class="upload-progress" style="position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+                    width: 300px; background: white; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                    padding: 10px; z-index: 9999;">
+                    <div style="margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
+                        <span class="progress-status">
+                            <i class="fa fa-upload"></i> 正在上传
+                        </span>
+                        <span class="progress-text"></span>
+                    </div>
+                    <div style="background-color: #f5f5f5; height: 20px; border-radius: 10px; overflow: hidden;">
+                        <div class="progress-bar" style="width: 0%; height: 100%;
+                            background-color: #007bff;
+                            transition: width 0.3s ease-in-out;">
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 添加进度条到页面
+            progressBar = $(progressHtml).appendTo('body');
+
+            // 更新进度条
+            const $bar = progressBar.find('.progress-bar');
+            const $status = progressBar.find('.progress-status');
+            const $text = progressBar.find('.progress-text');
+
+            // 更新进度文本
+            $text.text(`${validPercent}% ${text}`);
+
+            // 更新进度条宽度
+            $bar.css('width', `${validPercent}%`);
+
+            // 当上传完成时
+            if (validPercent === 100) {
+                // 更新状态图标和颜色
+                $status.html('<i class="fa fa-check-circle" style="color: #28a745;"></i> 上传完成');
+                $bar.css('background-color', '#28a745');
+
+                // 1.5秒后移除进度条并显示完成消息
+                setTimeout(() => {
+                    progressBar.fadeOut(() => {
+                        progressBar.remove();
+                    });
+                }, 1500);
+            }
         }
 
         // 辅助函数：消息提示函数
         function showMessageUpload(type, msg) {
+
             // 移除已存在的提示
             $('.alert-message').remove();
 
@@ -514,6 +577,7 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                 error: {icon: 'times-circle', class: 'danger'},
                 info: {icon: 'info-circle', class: 'info'}
             }[type] || {icon: 'info-circle', class: 'info'};
+
 
             // 创建提示元素
             const alert = $(`
@@ -526,7 +590,7 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
 
             // 如果是成功或错误提示，自动消失
             if (type !== 'info') {
-                alert.delay(1500).fadeOut(() => alert.remove());
+                alert.delay(3000).fadeOut(() => alert.remove());
             }
         }
 
