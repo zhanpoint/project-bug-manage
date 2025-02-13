@@ -117,7 +117,7 @@ SESSION_COOKIE_SECURE = False  # 是否支持Https传输cookie
 SESSION_COOKIE_HTTPONLY = True  # 是否只支持Http传输cookie
 SESSION_COOKIE_AGE = 1209600  # Session的cookie失效日期（默认2周）
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # 是否关闭浏览器使得Session过期
-SESSION_SAVE_EVERY_REQUEST = False  # 是否每次请求都保存Session，默认修改之后才保存
+SESSION_SAVE_EVERY_REQUEST = True  # Django会在每次请求时更新会话的过期时间
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators

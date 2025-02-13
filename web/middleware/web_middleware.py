@@ -24,6 +24,7 @@ class AllMiddleWare(MiddlewareMixin):
         obj = models.UserInfo.objects.filter(id=request.session.get('userinfo_id', 0)).first()
         request.bugtracer.user = obj  # 当前登录的用户
         if obj:  # (必须在用户注册以后才能执行)
+
             request.bugtracer.member_level = obj.member_level  # 获取当前登录用户的会员等级
 
         # 如果当前请求路径在白名单中，则不进行登录校验

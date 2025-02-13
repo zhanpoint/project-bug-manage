@@ -6,10 +6,8 @@ from web.forms.file import FileModelForm
 from django.http import JsonResponse
 from utils.aliyun.oss import delete_file, delete_files
 from django.db.models import Sum  # 从 Django 的数据库聚合函数模块中导入 Sum
-import json
 from utils.aliyun.sts import fetch_sts_token
 from Bug_manage import local_settings
-from mptt.managers import TreeManager
 
 
 def file(request, project_id):
@@ -180,9 +178,24 @@ def file_bulk_upload(request, project_id):
     """批量保存文件记录"""
     if request.method == 'POST':
         try:
-            # 检查项目剩余空间
+            # 获取项目和会员等级
             project = request.bugtracer.project
-            total_size = sum(int(f['size']) for f in json.loads(request.POST.get('files'))) / 1024  # 将前端发送的字节转换为KB
+            member_level = project.leader.member_level
+
+            # 解析上传文件数据
+            files = json.loads(request.POST.get('files'))
+
+            # 1. 单文件大小校验（前端也需要做相同校验,防御前端绕过）
+            max_single_file = member_level.single_file_space * 1024 * 1024  # 转换为字节
+            for f in files:
+                if int(f['size']) > max_single_file:
+                    return JsonResponse({
+                        'status': False,
+                        'error': f'文件 {f["name"]} 超过单文件限制({member_level.single_file_space}MB)'
+                    })
+
+            # 2. 总容量校验
+            total_size = sum(int(f['size']) for f in files) / 1024  # 转换为KB
             if project.remain_space < total_size:
                 return JsonResponse({'status': False, 'error': '项目空间不足'})
 
@@ -197,18 +210,16 @@ def file_bulk_upload(request, project_id):
                 ).first()
 
             # 批量创建记录,并逐个保存已生成MPTT字段
-            file_objs = [
-                models.FileRepository(
-                    name=f['name'],
-                    file_type=1,
-                    file_size=f['size'] / 1024,  # 将前端发送的字节转换为KB
-                    key=f['key'],
-                    file_extension=f['name'].split('.')[-1],
-                    update_user=request.bugtracer.user,
-                    project=project,
-                    parent=parent_obj
-                ).save() for f in json.loads(request.POST.get('files'))
-            ]
+            [models.FileRepository(
+                name=f['name'],
+                file_type=1,
+                file_size=f['size'] / 1024,  # 将前端发送的字节转换为KB
+                key=f['key'],
+                file_extension=f['name'].split('.')[-1],
+                update_user=request.bugtracer.user,
+                project=project,
+                parent=parent_obj
+            ).save() for f in files]
 
             # 更新项目空间
             project.remain_space -= total_size

@@ -264,13 +264,13 @@
 
             // 点击删除按钮
             $('.delete_btn').click(function () {
-                deleteId = $(this).data('id');  // 获取当前删除的文件夹ID
+                deleteId = $(this).data('id');  // 获取当前删除的文件夹/文件的ID
                 // 添加前端验证(提供更好的用户体验，并减少无效请求发送到服务器)
                 if (!deleteId) {
                     showMessageDelete('error', '无效的文件/文件夹ID');
                     return;
                 }
-                $('#folderToDelete').text($(this).data('name'));  // 设置要删除的文件夹名称
+                $('#folderToDelete').text($(this).data('name'));  // 设置要删除的文件夹/文件的名称
                 // 移除了重复的 modal('show') 调用，因为 Bootstrap 的 data-toggle="modal" 已经会处理模态框的显示
                 // $('#deleteModal').modal('show');
             });
@@ -329,6 +329,18 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
             const files = Array.from(e.target.files);  // ：e.target.files 返回的是一个 FileList 对象，而不是一个真正的数组。虽然 FileList 对象可以像数组一样访问其元素，但它不支持数组的所有方法
             if (!files.length) return;  // 如果没有选择文件，直接返回
 
+            // 获取项目配置（从Django模板变量获取）
+            const maxSingleFileMB = {{ request.bugtracer.project.leader.member_level.single_file_space }};
+            const remainSpaceKB = {{ request.bugtracer.project.remain_space }};
+
+            // 执行校验
+            const validation = validateFilesBeforeUpload(files, maxSingleFileMB, remainSpaceKB);
+            if (!validation.valid) {
+                showMessageUpload('error', validation.message);
+                this.value = '';
+                return;
+            }
+
             try {
                 // 显示总进度条
                 const totalSize = files.reduce((sum, file) => sum + file.size, 0);  // reduce方法遍历 files 数组，累加每个文件的大小，0是表示累加器sum的初始状值,
@@ -371,6 +383,31 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                 showMessageUpload('error', `上传失败: ${err.message}`);
             }
         });
+
+        function validateFilesBeforeUpload(files, maxSingleFileMB, remainSpaceKB) {
+            const maxSingleFileBytes = maxSingleFileMB * 1024 * 1024;
+            const maxTotalBytes = remainSpaceKB * 1024;
+
+            // 单文件校验
+            const invalidFiles = files.filter(file => file.size > maxSingleFileBytes);
+            if (invalidFiles.length) {
+                return {
+                    valid: false,
+                    message: `以下文件超过${maxSingleFileMB}MB限制：${invalidFiles.map(f => f.name).join(', ')}`
+                };
+            }
+
+            // 总容量校验
+            const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+            if (totalSize > maxTotalBytes) {
+                return {
+                    valid: false,
+                    message: `所选文件总大小超过剩余空间（剩余：${formatSize(maxTotalBytes)}）`
+                };
+            }
+
+            return {valid: true};
+        }
 
         // 辅助函数：获取OSS凭证
         async function fetchCredentials() {
@@ -443,7 +480,7 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                 const folder_id = new URLSearchParams(window.location.search).get('folder_id') || '';
                 const formData = new FormData();
 
-                formData.append('files', JSON.stringify(files));
+                formData.append('files', JSON.stringify(files));  // 浏览器FormData的append()方法只能处理字符串或Blob/File对象
                 formData.append('parent', folder_id);
 
                 const res = await fetch("{% url 'web:file_bulk_upload' project_id=request.bugtracer.project.id %}", {
