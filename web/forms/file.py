@@ -9,21 +9,22 @@ class FileModelForm(BootstrapForm, ModelForm):
         model = models.FileRepository
         fields = ['name', ]
 
-    def __init__(self, request, parent_obj, *args, **kwargs):
+    def __init__(self, request, parent_obj, is_file=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.request = request
         self.parent = parent_obj
+        self.is_file = is_file  # 新增参数标识是否是文件
 
     def clean_name(self):
-        # 获取用户提交的文件夹名称
+        # 获取用户提交的文件夹/文件名称
         name = self.cleaned_data.get('name')
-        # 获取当前表单对应的模型实例,从中获取父级目录和所属项目
-        parent_object = self.parent
-        project = self.request.bugtracer.project  # 从request中获取project
+
+        # 根据类型设置查询条件
+        file_type = 1 if self.is_file else 2
 
         # 构建查询集
         queryset = models.FileRepository.objects.filter(
-            file_type=2,
+            file_type=file_type,  # 动态设置文件类型
             name=name,
             project=self.request.bugtracer.project)
 
@@ -42,6 +43,7 @@ class FileModelForm(BootstrapForm, ModelForm):
             exists = queryset.filter(parent__isnull=True).exists()
 
         if exists:
-            raise ValidationError('文件夹名称已存在')
+            error_msg = '文件名已存在' if self.is_file else '文件夹名称已存在'
+            raise ValidationError(error_msg)
 
         return name

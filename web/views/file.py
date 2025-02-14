@@ -81,26 +81,31 @@ def file_edit(request, project_id):
         try:
             data = json.loads(request.body)
             # 编辑按钮是在遍历已存在的文件夹时生成（folderID正常情况下一定不为空），除非有人恶意构造请求
-            folderId = data.get('folderId', '')  # 当前操作文件夹id
+            folderId = data.get('folderId', '')  # 当前操作文件夹/文件夹id
             if folderId and folderId.isdecimal():
                 folder_object = models.FileRepository.objects.filter(
                     id=int(folderId),
                     project=request.bugtracer.project,
-                    file_type=2
                 ).first()
 
-                # 获取当前显示列表的父级文件夹对象
-                parent_obj = folder_object.parent
+                if not folder_object:
+                    return JsonResponse({'status': False, 'error': '对象不存在'})
 
-                # 创建新的数据字典，只包含form需要的字段
+                # 关键修改：创建只包含必要字段的数据字典(防止恶意用户通过POSTMAN等工具添加额外字段（如file_size）进行篡改)
                 form_data = {
                     'name': data.get('name', '')  # 只传递name字段
                 }
 
-                # 在编辑操作时，添加了 instance=folder_object 参数，这样可以确保我们是在更新现有记录而不是创建新记录
-                # parent_obj参数仍然是必须的，因为编辑操作需要查看该文件夹的父文件夹所有文件名以防止创建在同一目录下同名文件夹
-                # 对于PUT请求中JSON格式的数据，不应该request.POST来获取数据，而是创建新的数据字典，只包含form需要的字段
-                form = FileModelForm(request, parent_obj, data=form_data, instance=folder_object)
+                parent_obj = folder_object.parent
+
+                # 根据文件类型进行不同处理
+                if folder_object.file_type == 1:
+                    # 文件只需要校验同级文件名
+                    # 对于PUT请求中JSON格式的数据，不应该request.POST来获取数据，而是创建新的数据字典，只包含form需要的字段
+                    form = FileModelForm(request, parent_obj, data=form_data, instance=folder_object, is_file=True)
+                else:
+                    form = FileModelForm(request, parent_obj, data=form_data, instance=folder_object)
+
                 if form.is_valid():
                     form.save()
                     return JsonResponse({'status': True})

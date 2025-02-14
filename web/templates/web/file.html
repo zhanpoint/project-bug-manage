@@ -3,6 +3,7 @@
 {% block css %}
     <link rel="stylesheet" href="{% static 'web/css/file.css' %}"/>
 {% endblock %}
+
 {% block content %}
     <div class="container-fluid">
         <div class="panel panel-warning" style="margin-top: 25px">
@@ -20,7 +21,9 @@
                     {% endfor %}
                 </div>
 
+
                 <div class="file-header-right">
+
                     <div class="btn-group">
                         <!-- 上传文件按钮 -->
                         <!-- 隐藏原生的文件输入框 -->
@@ -73,28 +76,34 @@
                         <td>
                             {% if item.file_type == 1 %}
                                 {{ item.file_size }}KB
-                            {% else %}
+
 
                             {% endif %}
                         </td>
                         <td>{{ item.update_datetime }}</td>
                         <td>
-                            <a class="btn btn-primary btn-xs"
-                               data-toggle="modal"
-                               data-target="#add_edit_modal"
-                               data-whatever="编辑文件夹"
-                               data-folder-id="{{ item.id }}"
+                            <!--HTML中，id必须是唯一的,由于该a标签是循环生成的，因此不能设置id值 -->
+
+
+                            <a class="btn btn-primary btn-xs" data-toggle="modal" data-target="#add_edit_modal"
+                               data-whatever="编辑文件/文件夹" data-folder-id="{{ item.id }}"
                                data-folder-name="{{ item.name }}">
                                 <i class="fa fa-edit"></i>编辑
                             </a>
-                            <!--HTML中，id必须是唯一的,由于该a标签是循环生成的，因此不能设置id值 -->
-                            <a class="btn btn-danger btn-xs delete_btn"
-                               data-toggle="modal"
-                               data-target="#deleteModal"
-                               data-id="{{ item.id }}"
-                               data-name="{{ item.name }}">
+
+
+                            <a class="btn btn-danger btn-xs delete_btn" data-toggle="modal" data-target="#deleteModal"
+                               data-id="{{ item.id }}" data-name="{{ item.name }}">
                                 <i class="fa fa-trash"></i>删除
                             </a>
+
+                            {% if item.file_type == 1 %}
+                                <a class="btn btn-success btn-xs download-btn" data-key="{{ item.key }}"
+                                   data-name="{{ item.name }}">
+                                    <i class="fa fa-download"></i>下载
+                                </a>
+
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}
@@ -116,8 +125,8 @@
                         {% csrf_token %}
                         <!-- 在编辑文件夹时，我们会把当前文件夹的 ID 存储在隐藏表单中， -->
                         <!-- name属性通常是在服务器端通过 request.POST.get('folderId') 获取值时使用的键名
-                        如果使用 AJAX 手动构建数据发送（而不是表单自动提交），确实可以省略 name 属性-->
-                        {#                       <input type="hidden" id="folderId" name="folderId">#}
+                            如果使用 AJAX 手动构建数据发送（而不是表单自动提交），确实可以省略 name 属性-->
+                        {# <input type="hidden" id="folderId" name="folderId">#}
                         <input type="hidden" id="folderId">
                         <!--添加隐藏的父文件夹ID字段-->
                         <input type="hidden" id="parentId">
@@ -175,6 +184,7 @@
             initmodal();  // 根据触发按钮改变模态内容
             bindAddEditFolder();  // 绑定新建添加文件夹事件
             bindDeleteFolder();  // 绑定删除文件夹事件
+            bindDownloadFile();  // 绑定下载文件事件
         })
 
         function initmodal() {
@@ -187,8 +197,8 @@
 
                 // 获取数据（当前点击按钮所操作文件夹的数据）
                 let recipient = button.data('whatever')
-                let folderId = button.data('folder-id');  // 编辑的文件夹ID
-                let folderName = button.data('folder-name');  // 编辑的文件夹名称
+                let folderId = button.data('folder-id');  // 编辑的文件夹/文件ID
+                let folderName = button.data('folder-name');  // 编辑的文件夹/文件名称
                 let parentId = button.data('parent_id')  // 新建时的父文件夹ID
 
                 // 设置模态框标题
@@ -200,7 +210,7 @@
 
                 if (folderId) {  // 编辑模式
                     modal.find('#folderId').val(folderId);  // 将ID存储在隐藏字段中
-                    modal.find('#id_name').val(folderName);  // 设置name字段输入框的值为当前文件夹的名称
+                    modal.find('#id_name').val(folderName);  // 设置name字段输入框的值为当前文件夹/文件的名称
                 } else {  // 新建模式
                     modal.find('#folderId').val('');
                     modal.find('#id_name').val('');
@@ -330,15 +340,21 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
             if (!files.length) return;  // 如果没有选择文件，直接返回
 
             // 获取项目配置（从Django模板变量获取）
-            const maxSingleFileMB = {{ request.bugtracer.project.leader.member_level.single_file_space }};
-            const remainSpaceKB = {{ request.bugtracer.project.remain_space }};
+            const maxSingleFileMB = parseInt("{{ request.bugtracer.project.leader.member_level.single_file_space }}", 10) || 0;
+            const remainSpaceKB = parseInt("{{ request.bugtracer.project.remain_space }}", 10) || 0;
+            // 添加验证以确保值有效
+            if (!maxSingleFileMB || !remainSpaceKB) {
+                showMessageUpload('error', '无法获取项目配置信息');
+                this.value = '';  // 清空文件选择
+                return;
+            }
 
             // 执行校验
             const res = validateFilesBeforeUpload(files, maxSingleFileMB, remainSpaceKB);
             const validationFiles = res.validFiles;
             if (!res.valid) {
                 showMessageUpload('error', res.message);
-                if (!validationFiles) {  // 如果合法文件数组为空，则清空文件选择框的值，并返回
+                if (!validationFiles.length) {  // 如果合法文件数组为空，则清空文件选择框的值，并返回
                     this.value = '';
                     return;
                 }
@@ -346,48 +362,50 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
 
             try {
                 // 显示总进度条
-                const totalSize = files.reduce((sum, file) => sum + file.size, 0);  // reduce方法遍历 files 数组，累加每个文件的大小，0是表示累加器sum的初始状值,
-                let uploadedSize = 0;  // 初始化已上传文件大小为 0(根据Web API的标准，File对象的size属性返回的是文件的字节数，单位是字节（bytes）)
-                showMessageUpload('info', `准备上传 ${files.length} 个文件（${formatSize(totalSize)}）`);  // 告知用户即将上传的文件数量及总大小
+                if (validationFiles.length) {
+                    const totalSize = validationFiles.reduce((sum, file) => sum + file.size, 0);  // reduce方法遍历 files 数组，累加每个文件的大小，0是表示累加器sum的初始状值,
+                    let uploadedSize = 0;  // 初始化已上传文件大小为 0(根据Web API的标准，File对象的size属性返回的是文件的字节数，单位是字节（bytes）)
+                    showMessageUpload('info', `准备上传 ${files.length} 个文件（${formatSize(totalSize)}）`);  // 告知用户即将上传的文件数量及总大小
 
-                // 获取OSS凭证
-                const credentials = await fetchCredentials();
-                if (!credentials) return;
+                    // 获取OSS凭证
+                    const credentials = await fetchCredentials();
+                    if (!credentials) return;
 
-                // 初始化OSS客户端
-                const client = new OSS(credentials.config);
+                    // 初始化OSS客户端
+                    const client = new OSS(credentials.config);
 
-                // 上传文件(第一层：文件选择后的回调)
-                const uploadPromises = validationFiles.map(file =>  // 遍历文件列表，为每个文件创建上传任务,每个上传任务会调用 uploadFile 函数，并传递一个回调函数用于更新进度
-                    // (第二层：为每个文件创建上传任务时的回调)
-                    uploadFile(file, client, (progress) => {
-                        uploadedSize += progress.loaded;  // 更新已上传文件大小
-                        const percent = Math.round((uploadedSize / totalSize) * 100);  // 计算上传进度百分比并四舍五入
-                        showTotalProgress(percent, `${formatSize(uploadedSize)}/${formatSize(totalSize)}`);  // 显示当前进度和已上传/总文件大小
-                    })
-                );
+                    // 上传文件(第一层：文件选择后的回调)
+                    const uploadPromises = validationFiles.map(file =>  // 遍历文件列表，为每个文件创建上传任务,每个上传任务会调用 uploadFile 函数，并传递一个回调函数用于更新进度
+                        // (第二层：为每个文件创建上传任务时的回调)
+                        uploadFile(file, client, (progress) => {
+                            uploadedSize += progress.loaded;  // 更新已上传文件大小
+                            const percent = Math.round((uploadedSize / totalSize) * 100);  // 计算上传进度百分比并四舍五入
+                            showTotalProgress(percent, `${formatSize(uploadedSize)}/${formatSize(totalSize)}`);  // 显示当前进度和已上传/总文件大小
+                        })
+                    );
 
-                // 等待所有上传完成
-                const uploadResults = await Promise.allSettled(uploadPromises);  // Promise.allSettled会等待所有的Promise执行完毕，不论成功或失败，返回一个包含所有结果的数组
+                    // 等待所有上传完成
+                    const uploadResults = await Promise.allSettled(uploadPromises);  // Promise.allSettled会等待所有的Promise执行完毕，不论成功或失败，返回一个包含所有结果的数组
 
-                // 收集成功结果
-                const successFiles = uploadResults
-                    .filter(r => r.status === 'fulfilled' && r.value)  // 使用filter方法筛选出状态为'fulfilled'且有值的结果
-                    .map(r => r.value);  // 使用map方法提取筛选结果中的值
+                    // 收集成功结果
+                    const successFiles = uploadResults
+                        .filter(r => r.status === 'fulfilled' && r.value)  // 使用filter方法筛选出状态为'fulfilled'且有值的结果
+                        .map(r => r.value);  // 使用map方法提取筛选结果中的值
 
-                // 批量保存到数据库
-                const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));  // 创建一个延迟函数（Promise 方式实现）
-                if (successFiles.length) {
-                    const saveResult = await bulkSaveFiles(successFiles);
-                    if (saveResult.status) {
-                        // 等待1.5秒
-                        await delay(1500);
-                        // 显示保存成功消息
-                        showMessageUpload('success', `成功保存 ${successFiles.length} 个文件`);
-                        // 再等待1秒
-                        await delay(1000);
-                        // 刷新页面
-                        window.location.reload();
+                    // 批量保存到数据库
+                    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));  // 创建一个延迟函数（Promise 方式实现）
+                    if (successFiles.length) {
+                        const saveResult = await bulkSaveFiles(successFiles);
+                        if (saveResult.status) {
+                            // 等待1.5秒
+                            await delay(1500);
+                            // 显示保存成功消息
+                            showMessageUpload('success', `成功保存 ${successFiles.length} 个文件`);
+                            // 再等待1秒
+                            await delay(1000);
+                            // 刷新页面
+                            window.location.reload();
+                        }
                     }
                 }
             } catch (err) {
@@ -421,11 +439,23 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
             }
 
 
-            // 同名文件校验（从当前页面直接获取已存在文件名，避免额外请求）
-            const existingFiles = Array.from(document.querySelectorAll('.table tbody td:first-child'))
-                .map(td => td.textContent.replace(/^\S+\s+/, '').trim()); // 移除图标和空格
+            // 同名文件校验（仅检查文件名，排除文件夹）
+            const existingFiles = Array.from(document.querySelectorAll('.table tbody tr'))
+                .filter(tr => {
+                    // 通过图标类型判断是否是文件（文件夹图标为 fa-folder，文件图标为 fa-file）
+                    return tr.querySelector('.fa-file');
+                })
+                .map(tr => {
+                    // 获取文件名称（直接取第一个td的text内容，并过滤掉图标字符）
+                    const td = tr.querySelector('td:first-child');
+                    return Array.from(td.childNodes)
+                        .filter(node => node.nodeType === Node.TEXT_NODE)
+                        .map(node => node.textContent.trim())
+                        .join('')
+                        .replace(/^\s+|\s+$/g, '');
+                });
 
-            const {validFiles, conflictFiles} = files.reduce((acc, file) => {  // reduce快速分类合法以及不合法文件
+            const {validFiles, conflictFiles} = files.reduce((acc, file) => { // reduce快速分类合法以及不合法文件
                 existingFiles.includes(file.name) ?
                     acc.conflictFiles.push(file.name) :
                     acc.validFiles.push(file);
@@ -436,7 +466,7 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                 return {
                     valid: false,
                     validFiles: validFiles,
-                    message: `跳过 ${conflictFiles.length} 个重名文件：${conflictFiles.join(', ')}`
+                    message: `将跳过以下 ${conflictFiles.length} 个重名文件：【${conflictFiles.join(' , ')}】`
                 };
             }
             return {
@@ -543,29 +573,34 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
         // 辅助函数：显示进度条
         function showTotalProgress(percent, text) {
             const validPercent = isNaN(percent) ? 0 : percent;  // 确保percent是有效数字
+            const progressId = 'total-upload-progress';
 
-            // 创建进度条HTML
-            const progressHtml = `
-                <div class="upload-progress" style="position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
-                    width: 300px; background: white; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                    padding: 10px; z-index: 9999;">
-                    <div style="margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
-                        <span class="progress-status">
-                            <i class="fa fa-upload"></i> 正在上传
-                        </span>
-                        <span class="progress-text"></span>
-                    </div>
-                    <div style="background-color: #f5f5f5; height: 20px; border-radius: 10px; overflow: hidden;">
-                        <div class="progress-bar" style="width: 0; height: 100%;
-                            background-color: #007bff;
-                            transition: width 0.3s ease-in-out;">
+            // 检查是否已存在进度条
+            let progressBar = $(`#${progressId}`);
+
+            if (progressBar.length === 0) {
+                // 创建进度条HTML
+                const progressHtml = `
+                    <div id="${progressId}" class="upload-progress" style="position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+                        width: 300px; background: white; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                        padding: 10px; z-index: 9999;">
+                        <div style="margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
+                            <span class="progress-status">
+                                <i class="fa fa-upload"></i> 正在上传
+                            </span>
+                            <span class="progress-text"></span>
+                        </div>
+                        <div style="background-color: #f5f5f5; height: 20px; border-radius: 10px; overflow: hidden;">
+                            <div class="progress-bar" style="width: 0; height: 100%;
+                                background-color: #007bff;
+                                transition: width 0.3s ease-in-out;">
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
+                progressBar = $(progressHtml).appendTo('body');
+            }
 
-            // 添加进度条到页面
-            progressBar = $(progressHtml).appendTo('body');
 
             // 更新进度条
             const $bar = progressBar.find('.progress-bar');
@@ -632,6 +667,43 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                 unitIndex++;
             }
             return `${size.toFixed(1)}${units[unitIndex]}`;
+        }
+
+        // 下载文件处理函数
+
+        async function bindDownloadFile() {
+            $('.download-btn').click(async function () {
+                const key = $(this).data('key');
+                const fileName = $(this).data('name');
+
+                try {
+                    // 获取OSS凭证
+                    const credentials = await fetchCredentials();
+                    if (!credentials) return;
+
+                    // 初始化OSS客户端
+                    const client = new OSS(credentials.config);
+
+                    // 生成文件下载链接（签名URL，有效期1小时）
+                    const signedUrl = client.signatureUrl(key, {
+                        expires: 3600,  // 链接有效期1小时
+                        response: {
+                            'content-disposition': `attachment; filename=${encodeURIComponent(fileName)}`  // 指定下载时的文件名
+                        }
+                    });
+
+                    // 创建一个隐藏的a标签来触发下载
+                    const link = document.createElement('a');
+                    link.href = signedUrl;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                } catch (err) {
+                    showMessageUpload('error', `下载失败: ${err.message}`);
+                }
+            });
         }
     </script>
 {% endblock %}
