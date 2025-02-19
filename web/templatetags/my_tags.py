@@ -21,7 +21,7 @@ def project_manage_menu(request):
         {'name': '统计', 'url': reverse("web:statistic", kwargs={'project_id': request.bugtracer.project.id})},
         {'name': 'wiki', 'url': reverse("web:wiki", kwargs={'project_id': request.bugtracer.project.id})},
         {'name': '文件', 'url': reverse("web:file", kwargs={'project_id': request.bugtracer.project.id})},
-        {'name': '配置', 'url': reverse("web:setting", kwargs={'project_id': request.bugtracer.project.id})},
+        {'name': '设置', 'url': reverse("web:projectsetting", kwargs={'project_id': request.bugtracer.project.id})},
     ]
     for item in data_list:
         if request.path_info.startswith(item['url']):

@@ -1,0 +1,171 @@
+.table td, .table th {
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 90%;
+}
+
+.btn-group {
+    white-space: nowrap;
+}
+
+/* 搜索框容器 */
+.search-wrapper {
+    position: relative;
+}
+
+/* 搜索图标 */
+.search-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    pointer-events: none;
+}
+
+/* 搜索输入框 */
+#searchInput {
+    padding-right: 30px;
+}
+
+/* 输入框获得焦点时的样式 */
+#searchInput:focus {
+    box-shadow: none;
+    border-color: #ced4da;
+}
+
+
+/* 筛选面板样式 */
+.filter-panel {
+    background-color: #f8f9fa;
+}
+
+.filter-panel label {
+    font-size: 0.9rem;
+    color: #495057;
+    margin-bottom: 0.3rem;
+}
+
+.filter-panel .form-control {
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+}
+
+.filter-panel .form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
+}
+
+/* 日期范围选择器样式 */
+.filter-panel input[type="date"] {
+    width: calc(50% - 1rem);
+}
+
+.filter-panel .mx-2 {
+    color: #6c757d;
+}
+
+/* 应用筛选按钮样式 */
+.filter-panel .btn-primary {
+    margin-top: 1.9rem;
+    height: 38px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .filter-panel .form-group {
+        margin-bottom: 1rem !important;
+    }
+
+    .filter-panel .btn-primary {
+        margin-top: 0;
+    }
+}
+
+
+/* 修改日期选择器图标样式 */
+.input-group-addon { /* 改用 input-group-addon 替代 input-group-text */
+    cursor: pointer;
+    background-color: #fff;
+}
+
+.input-group-addon:hover {
+    background-color: #f8f9fa;
+}
+
+/* 确保图标垂直居中 */
+.input-group-addon i {
+    line-height: 1;
+}
+
+/* 输入框组样式调整 */
+.input-group {
+    width: 100%;
+}
+
+/* 日期输入框样式 */
+.input-group .form-control {
+    border-right: 0;
+}
+
+.input-group .input-group-addon {
+    border-left: 0;
+}
+
+/* 确保日期选择器下拉框位置正确 */
+.datepicker {
+    z-index: 1060 !important; /* 确保在模态框中正确显示 */
+}
+
+
+/* Select2 标签样式自定义 */
+.select2-container--bootstrap .select2-selection--multiple {
+    min-height: 34px; /* Bootstrap 3 默认输入框高度 */
+}
+
+.select2-container--bootstrap .select2-selection--multiple .select2-selection__choice {
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin: 2px 4px 2px 0;
+    font-size: 14px;
+}
+
+.select2-container--bootstrap .select2-selection--multiple .select2-selection__choice__remove {
+    margin-right: 4px;
+    color: #999;
+    cursor: pointer;
+}
+
+.select2-container--bootstrap .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #333;
+}
+
+/* 确保在模态框中正确显示 */
+.select2-container {
+    z-index: 1060;
+}
+
+/* 隐藏搜索框 */
+.select2-search--dropdown {
+    display: none;
+}
+
+/* 调整下拉选项样式 */
+.select2-results__option {
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.select2-results__option:hover {
+    background-color: #f8f9fa;
+}
+
+/* 选中项样式 */
+.select2-results__option[aria-selected="true"] {
+    background-color: #e9ecef !important;
+    color: #495057;
+}

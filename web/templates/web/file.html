@@ -1,14 +1,15 @@
 {% extends 'templates/base/manage_center.html' %}
 {% load static %}
 {% block css %}
-    <link rel="stylesheet" href="{% static 'web/css/file.css' %}"/>
+    <link rel="stylesheet" href="{% static 'web/css/file.css' %}">
 {% endblock %}
 
 {% block content %}
     <div class="container-fluid">
         <div class="panel panel-warning" style="margin-top: 25px">
             <div class="panel-heading">
-                <!-- 添加导航路径 -->
+                <!-- 添加导航   路径 -->
+
                 <div class="breadcrumb file-header-left" style="margin: 0; padding: 0; background-color: transparent;">
                     <a href="{% url 'web:file' project_id=request.bugtracer.project.id %}" class="btn btn-link">
                         <i class="fa fa-home" aria-hidden="true"></i> 根目录
@@ -20,10 +21,7 @@
                         </a>
                     {% endfor %}
                 </div>
-
-
                 <div class="file-header-right">
-
                     <div class="btn-group">
                         <!-- 上传文件按钮 -->
                         <!-- 隐藏原生的文件输入框 -->
@@ -32,9 +30,10 @@
                         <button class="btn btn-primary" onclick="document.getElementById('uploadFile').click()">
                             <i class="fa fa-upload"></i> 上传文件
                         </button>
+
                         <!-- 新建文件夹按钮 -->
                         <a type="button" data-toggle="modal" data-target="#add_edit_modal" data-whatever="新建文件夹"
-                           data-parent_id="{{ request.GET.folder_id }}" class="btn btn-success">
+                            data-parent_id="{{ request.GET.folder_id }}" class="btn btn-success">
                             <i class="fa fa-plus-circle"></i>新建文件夹
                         </a>
                     </div>
@@ -51,20 +50,18 @@
                 </tr>
                 </thead>
                 <tbody>
-                {% for item in file_list %}
+                   {% for item in file_list %}
                     <tr>
                         <td>
                             {% if item.file_type == 1 %}
-                                <i class="fa fa-file" style="background-color: #AEAEAE"></i>
+                                    <i class="fa fa-file" style="background-color: #AEAEAE"></i>
                                 {{ item.name }}
                             {% else %}
                                 <a href="{% url 'web:file' project_id=request.bugtracer.project.id %}?folder_id={{ item.id }}">
                                     <i class="fa fa-folder" style="color: #b58900"></i>
                                     {{ item.name }}
                                 </a>
-
                             {% endif %}
-
                         </td>
                         <td>
                             {% if item.file_type == 1 %}
@@ -76,33 +73,25 @@
                         <td>
                             {% if item.file_type == 1 %}
                                 {{ item.file_size }}KB
-
-
                             {% endif %}
                         </td>
                         <td>{{ item.update_datetime }}</td>
                         <td>
                             <!--HTML中，id必须是唯一的,由于该a标签是循环生成的，因此不能设置id值 -->
-
-
                             <a class="btn btn-primary btn-xs" data-toggle="modal" data-target="#add_edit_modal"
                                data-whatever="编辑文件/文件夹" data-folder-id="{{ item.id }}"
                                data-folder-name="{{ item.name }}">
                                 <i class="fa fa-edit"></i>编辑
                             </a>
-
-
                             <a class="btn btn-danger btn-xs delete_btn" data-toggle="modal" data-target="#deleteModal"
                                data-id="{{ item.id }}" data-name="{{ item.name }}">
                                 <i class="fa fa-trash"></i>删除
                             </a>
-
                             {% if item.file_type == 1 %}
                                 <a class="btn btn-success btn-xs download-btn" data-key="{{ item.key }}"
                                    data-name="{{ item.name }}">
                                     <i class="fa fa-download"></i>下载
                                 </a>
-
                             {% endif %}
                         </td>
                     </tr>
@@ -174,6 +163,7 @@
         </div>
     </div>
 {% endblock %}
+
 {% block js %}
     <script src="{% static 'web/js/http_gosspublic.alicdn.com_aliyun-oss-sdk-6.17.1.min.js' %}"></script>
     <script>
@@ -193,7 +183,7 @@
                 // 获取当前模态框的jQuery对象
                 let modal = $(this)
                 // 获取触发模态框的元素（通常是按钮）
-                let button = $(event.relatedTarget)
+            let button = $(event.relatedTarget)
 
                 // 获取数据（当前点击按钮所操作文件夹的数据）
                 let recipient = button.data('whatever')
@@ -670,7 +660,6 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
         }
 
         // 下载文件处理函数
-
         async function bindDownloadFile() {
             $('.download-btn').click(async function () {
                 const key = $(this).data('key');
@@ -685,14 +674,16 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                     const client = new OSS(credentials.config);
 
                     // 生成文件下载链接（签名URL，有效期1小时）
-                    const signedUrl = client.signatureUrl(key, {
+                    const signedUrl = client.signatureUrl(key, {  // 生成带有签名的URL
+                        // 设置参数
                         expires: 3600,  // 链接有效期1小时
-                        response: {
-                            'content-disposition': `attachment; filename=${encodeURIComponent(fileName)}`  // 指定下载时的文件名
+                        response: {  // 设置响应头
+                            // 浏览器应将响应作为附件下载,使用encodeURIComponent(fileName)对文件名进行编码，确保文件名中的特殊字符被正确处理。
+                            'content-disposition': `attachment; filename=${encodeURIComponent(fileName)}`
                         }
                     });
 
-                    // 创建一个隐藏的a标签来触发下载
+                    // 创建一个隐藏的<a>元素，设置其href属性为签名URL，并设置download属性为文件名，然后模拟点击该链接以触发文件下载
                     const link = document.createElement('a');
                     link.href = signedUrl;
                     link.download = fileName;
@@ -705,5 +696,6 @@ transform: translateX(-50%); text-align: center; z-index: 9999;">
                 }
             });
         }
+
     </script>
 {% endblock %}

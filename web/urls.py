@@ -1,7 +1,7 @@
 # re_path方法只使用django1版本，django2.2+使用path和re_path,re_path() 完全等同于旧的 re_path()
 from django.conf.urls import include
 from django.urls import re_path
-from .views import user, homepage, project, projectmenu, wiki, file
+from .views import user, homepage, project, projectmenu, wiki, file, setting, issue
 
 # 确保每个应用的urls.py中都定义了app_name
 app_name = 'web'
@@ -26,7 +26,10 @@ urlpatterns = [
     # 单项目管理功能相关（include第一项要用列表不能用元组）
     re_path(r'^projectmenu/(?P<project_id>\d+)/', include([
         re_path(r'^dashboard/$', projectmenu.dashboard, name='dashboard'),
-        re_path(r'^issue/$', projectmenu.issue, name='issue'),
+        # issue相关功能
+        re_path(r'^issue/$', issue.issue, name='issue'),
+        re_path(r'^issue/create/$', issue.issue_create, name='issue_create'),
+
         re_path(r'^statistic/$', projectmenu.statistic, name='statistic'),
         # wiki相关功能
         re_path(r'^wiki/$', wiki.wiki, name='wiki'),
@@ -44,6 +47,10 @@ urlpatterns = [
         # STS临时凭证
         re_path(r'^file/credentials/$', file.file_credentials, name='file_credentials'),
         # 项目设置功能
-        re_path(r'^setting/$', projectmenu.setting, name='setting')
+        re_path(r'^setting/$', projectmenu.setting, name='projectsetting'),
     ], None)),
+
+    # 用户设置
+    re_path(r'^setting/$', setting.setting, name='setting'),
+    re_path(r'^setting/myproject_delete/(?P<project_id>\d+)/$', setting.myproject_delete, name='myproject_delete'),
 ]

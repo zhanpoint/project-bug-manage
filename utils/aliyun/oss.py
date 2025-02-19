@@ -144,6 +144,7 @@ def list_objects(bucket):
         logging.error(f"Failed to list objects: {e}")
 
 
+# 删除桶中最多100个文件
 def delete_objects(bucket):
     try:
         objects = list(islice(oss2.ObjectIterator(bucket), 100))
@@ -157,15 +158,37 @@ def delete_objects(bucket):
         logging.error(f"Failed to delete objects: {e}")
 
 
-def delete_bucket(bucket):
+# 删除桶
+def delete_bucket(bucket_name, region):
+    auth = oss2.Auth(
+        alibaba_cloud_access_key_id,
+        alibaba_cloud_access_key_secret
+    )
+    endpoint = f'http://oss-{region}.aliyuncs.com'
+
     try:
-        bucket.delete_bucket()
-        logging.info("Bucket deleted successfully")
-    except oss2.exceptions.OssError as e:
-        logging.error(f"Failed to delete bucket: {e}")
+        # 删除存储桶及所有文件
+        if bucket_name:
+            bucket = oss2.Bucket(auth, endpoint, bucket_name)
+
+            # 1. 删除所有对象
+            for obj in oss2.ObjectIterator(bucket):
+                bucket.delete_object(obj.key)
+
+            # 2. 删除所有未完成的分片上传
+            for upload in oss2.MultipartUploadIterator(bucket):
+                bucket.abort_multipart_upload(upload.key, upload.upload_id)
+
+            # 3. 删除存储桶本身
+            bucket.delete_bucket()
+
+    except oss2.exceptions.NoSuchBucket:
+        pass  # 如果桶不存在则跳过
+    # except Exception as e:
+    #     return redirect(f'/web/setting/?error={str(e)}')
 
 
-# 添加检查bucket是否存在的函数
+# 添加检查bucket是否存在
 def check_bucket_exists(bucket):
     try:
         bucket.get_bucket_info()
@@ -197,6 +220,7 @@ def delete_file(bucket_name, key, region):
         logging.error(f"Failed to delete file: {e}")
 
 
+# 删除多个文件
 def delete_files(bucket_name, keys, region):
     """
     批量删除OSS文件

@@ -1,7 +1,470 @@
 {% extends 'templates/base/manage_center.html' %}
+{% load static %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'web/css/issue.css' %}">
+<link rel="stylesheet" href="{% static 'plugin/fontawesome-free-5.15.4-web/css/all.min.css' %}">
+<!--引入编辑器插件样式--->
+<link rel="stylesheet" href="{% static 'plugin/editor.md-master/css/editormd.min.css' %}" />'
+<!--引入bootstrap-select插件样式--->
+<link rel="stylesheet" href="{% static 'plugin/bootstrap-select/bootstrap-select.min.css' %}" />
+<!--引入bootstrap-datepicker插件样式--->
+<link rel="stylesheet" href="{% static 'plugin/bootstrap-datepicker/bootstrap-datepicker.min.css' %}" />
+<!--引入select2插件样式--->
+<link href="{% static 'plugin/select2/css/select2.min.css' %}" rel="stylesheet">
+<link href="{% static 'plugin/select2/css/select2-bootstrap.min.css' %}" rel="stylesheet">
+{% endblock %}
 
 {% block content %}
-    <div class="container-fluid">
-        <h1>issue</h1>
+<!-- 顶部搜索和筛选区域 -->
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <!-- 搜索框 -->
+        <div class="col-md-4">
+            <div class="search-wrapper">
+                <input type="text" class="form-control" placeholder="搜索问题..." id="searchInput">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+        </div>
+
+        <!-- 筛选按钮 -->
+        <div class="col-md-8">
+            <button class="btn btn-outline-secondary" type="button" data-toggle="collapse" data-target="#filterPanel">
+                <i class="fas fa-filter"></i> 筛选
+            </button>
+
+            <!-- 新建问题按钮 -->
+            <button class="btn btn-success float-right" data-toggle="modal" data-target="#createIssueModal">
+                <i class="fas fa-plus"></i> 新建问题
+            </button>
+        </div>
     </div>
+
+    <!-- 筛选面板 -->
+    <div class="collapse mb-4" id="filterPanel">
+        <div class="card">
+            <div class="card-body filter-panel">
+                <div class="row align-items-end">
+                    <!-- 状态筛选 -->
+                    <div class="col-md-2">
+                        <div class="form-group mb-0">
+                            <label>状态</label>
+                            <select class="form-control">
+                                <option value="">全部</option>
+                                <option value="new">新建</option>
+                                <option value="progress">进行中</option>
+                                <option value="resolved">已解决</option>
+                                <option value="closed">已关闭</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 优先级筛选 -->
+                    <div class="col-md-2">
+                        <div class="form-group mb-0">
+                            <label>优先级</label>
+                            <select class="form-control">
+                                <option value=""></option>
+                                <option value="critical">紧急</option>
+                                <option value="high">高</option>
+                                <option value="medium">中</option>
+                                <option value="low">低</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 标签筛选 -->
+                    <div class="col-md-2">
+                        <div class="form-group mb-0">
+                            <label>标签</label>
+                            <select class="form-control" multiple>
+                                <option value="bug">Bug</option>
+                                <option value="feature">新功能</option>
+                                <option value="optimization">优化</option>
+                                <option value="document">文档</option>
+                                <option value="design">设计</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 时间范围筛选 -->
+                    <div class="col-md-4">
+                        <div class="form-group mb-0">
+                            <label>时间范围</label>
+                            <div class="d-flex">
+                                <input type="date" class="form-control" placeholder="开始日期">
+                                <span class="mx-2 align-self-center">至</span>
+                                <input type="date" class="form-control" placeholder="结束日期">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 筛选按钮 -->
+                    <div class="col-md-2">
+                        <button class="btn btn-primary w-100">进行筛选</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 问题列表 -->
+    <div class="card">
+        <div class="card-body p-0">
+            <table class="table table-hover">
+                <thead class="thead-light">
+                    <tr>
+                        <th>标题</th>
+                        <th>状态</th>
+                        <th>优先级</th>
+                        <th>创建者</th>
+                        <th>创建时间</th>
+                        <th>截止日期</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for issue in issues %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'issue_detail' issue.id %}">{{ issue.title }}</a>
+                        </td>
+                        <td>
+                            <span class="badge {% if issue.status == 'new' %}badge-info
+                                                 {% elif issue.status == 'progress' %}badge-warning
+                                                 {% elif issue.status == 'resolved' %}badge-success
+                                                 {% else %}badge-secondary{% endif %}">
+                                {{ issue.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if issue.priority == 'critical' %}badge-danger
+                                                 {% elif issue.priority == 'high' %}badge-warning
+                                                 {% elif issue.priority == 'medium' %}badge-info
+                                                 {% else %}badge-secondary{% endif %}">
+                                {{ issue.get_priority_display }}
+                            </span>
+                        </td>
+                        <td>{{ issue.creator.username }}</td>
+                        <td>{{ issue.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>{{ issue.due_date|date:"Y-m-d" }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 分页控件 -->
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="form-inline">
+            <label class="mr-2">每页显示：</label>
+            <select class="form-control form-control-sm">
+                <option>10</option>
+                <option>20</option>
+                <option>50</option>
+            </select>
+        </div>
+
+        <nav>
+            <ul class="pagination mb-0">
+                <li class="page-item {% if not issues.has_previous %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ issues.previous_page_number }}">上一页</a>
+                </li>
+
+                {% for num in issues.paginator.page_range %}
+                <li class="page-item {% if issues.number == num %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endfor %}
+
+                <li class="page-item {% if not issues.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ issues.next_page_number }}">下一页</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+<!-- 新建问题模态框 -->
+<div class="modal fade" id="createIssueModal" tabindex="-1" role="dialog" aria-labelledby="createIssueModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createIssueModalLabel">新建问题</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="createIssueForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="id_title">标题</label>
+                        <input type="text" class="form-control" id="id_title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="id_tags">标签</label>
+                        <select class="form-control select2-tags" id="id_tags" name="tags" multiple>
+                            {% for tag in form.tags.field.choices %}
+                                <option value="{{ tag.0 }}">{{ tag.1 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="id_description">问题描述</label>
+                        <div id="editormd">
+                            <textarea class="form-control" id="id_description" name="description" rows="4"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="id_status">状态</label>
+                            <select class="selectpicker form-control" data-live-search="true" id="id_status"
+                                name="status">
+                                {% for value, label in form.status.field.choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-4">
+                            <label for="id_priority">优先级</label>
+                            <select class="selectpicker form-control" data-live-search="true" id="id_priority"
+                                name="priority">
+                                {% for value, label in form.priority.field.choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-4">
+                            <label for="id_assignee">指派给</label>
+                            <select class="selectpicker form-control" data-live-search="true" id="id_assignee"
+                                name="assignee" multiple>
+                                {% for user in project_members %}
+                                <option value="{{ user.id }}">{{ user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="id_due_date">截止日期</label>
+                        <div class="input-group">
+                            <input class="form-control" id="id_due_date" name="due_date" autocomplete="off">
+                            <!--Bootstrap 5 直接使用 input-group-text 作为输入框的附加元素,不需要input-group-append-->
+                            <!--这里使用bootstrap3-->
+                            <span class="input-group-addon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="submit_creat_issue">创建</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block js %}
+<script src="{% static 'plugin/editor.md-master/editormd.min.js' %}"></script>
+<script src="{% static 'plugin/bootstrap-select/bootstrap-select.min.js' %}"></script>
+<script src="{% static 'plugin/bootstrap-datepicker/bootstrap-datepicker.min.js' %}"></script>
+<script src="{% static 'plugin/select2/js/select2.min.js' %}"></script>
+<script src="{% static 'plugin/select2/js/i18n/zh-CN.js' %}"></script>
+<script>
+    // 项目文档资源上传的URL
+    const wiki_upload_url = "{% url 'web:wiki_upload' project_id=request.bugtracer.project.id %}";
+    $(document).ready(function () {
+        // 初始化模态框显示事件
+        initCreateIssueModal()
+        // 处理新建问题表单提交
+        createIssueSubmit();
+        // 初始化日期选择器
+        initDatePicker();
+    });
+
+    function initCreateIssueModal() {
+        // 初始化Select2标签选择器
+        initTagSelect();
+
+        // 初始化模态框显示事件
+        $('#createIssueModal').on('shown.bs.modal', function () {
+            // 确保在模态框完全显示后再初始化编辑器
+            setTimeout(function () {
+                initEditorMd();
+            }, 100);
+        });
+
+        // 处理模态框隐藏事件
+        $('#createIssueModal').on('hidden.bs.modal', function () {
+            // 销毁编辑器实例
+            if (editor && editor.destroy) {
+                editor.destroy();
+            }
+            // 重置表单
+            $('#createIssueForm')[0].reset();
+            $('.select2-tags').val(null).trigger('change');
+        });
+    }
+
+    let editor; // 声明一个全局变量来存储编辑器实例
+
+    function initEditorMd() {
+        // 初始化编辑器并保存实例
+        editor = editormd("editormd", {
+            placeholder: "请输入内容",
+            width: "100%",
+            height: 240,
+            // 引用Editor.md插件所需的静态资源文件的路径，默认是当前路径下的lib文件夹
+            path: "{% static 'plugin/editor.md-master/lib/' %}",
+            imageUpload: true,  // 开启本地图片上传功能
+            imageFormats: ["jpg", "jpeg", "gif", "png", "bmp", "webp"],  // 允许上传的图片格式
+            imageUploadURL: wiki_upload_url,  // 图片上传的url地址
+        });
+    }
+
+    function createIssueSubmit() {
+        $('#submit_creat_issue').on('click', function () {
+            // 获取表单数据
+            let formData = new FormData($('#createIssueForm')[0]);
+
+            // 获取选中的标签
+            let selectedTags = $('.select2-tags').val();
+            // 清除之前的tags
+            formData.delete('tags');
+            // 添加每个选中的tag
+            if (selectedTags && selectedTags.length > 0) {
+                selectedTags.forEach(tag => {
+                    formData.append('tags', tag);
+                });
+            }
+
+            // 获取编辑器内容
+            if (editor && editor.getMarkdown) {
+                formData.set('description', editor.getMarkdown());
+            }
+
+            // 清除之前的错误提示
+            $('.error-message').remove();
+            $('.is-invalid').removeClass('is-invalid');
+
+            $.ajax({
+                url: "{% url 'web:issue_create' project_id=request.bugtracer.project.id %}",  // 需要在urls.py中定义此URL
+                type: 'POST',
+                data: formData,
+                // 这两个设置对于上传文件或使用 FormData 是必需的
+                processData: false,  // 默认情况下：jQuery会自动将发送的数据转换为查询字符串格式,由于formData已经是正确的格式且包含文件等二进制流，所以需要设置为false
+                contentType: false,  // 默认情况下，jQuery 会设置 Content-Type，当使用 FormData 时浏览器会自动设置为 multipart/form-data
+                success: function (response) {
+                    if (response.status) {
+                        let modal = $('#createIssueModal');
+                        // 创建成功
+                        modal.modal('hide');
+                        // 使用 one() 确保只触发一次
+                        modal.one('hidden.bs.modal', function () {
+                            // 在模态框完全关闭后执行
+                            alert('问题创建成功！');
+                            location.reload();
+                        });
+                    } else {
+                        // 显示表单错误
+                        if (response.errors) {
+                            Object.keys(response.errors).forEach(function (field) {
+                                const errorMsg = response.errors[field].join(', ');  // 将该字段的所有错误信息拼接成一个字符串
+                                const $field = $(`#id_${field}`);
+                                $field.addClass('is-invalid');  // 添加错误样式
+                                $field.after(`<div class="invalid-feedback error-message">${errorMsg}</div>`);  // 该字段后插入一个包含错误信息的 <div> 元素
+                            });
+                        } else {
+                            alert(response.message || '创建失败，请检查表单数据');
+                        }
+                    }
+                },
+                error: function (xhr, errmsg, err) {
+                    alert('创建问题失败，请重试');
+                }
+            });
+        });
+    }
+
+    function initDatePicker() {
+        const $dateInput = $('#id_due_date');
+        const $dateIcon = $dateInput.closest('.input-group').find('.input-group-addon');
+
+        // 获取今天的日期
+        const today = new Date();
+        // 设置时间为当天的 24:59:59，确保包含今天
+        today.setHours(0, 0, 0, 0);
+
+        $dateInput.datepicker({
+            format: 'yyyy-mm-dd',  // 日期格式为年-月-日
+            autoclose: true,  // 选择日期后自动关闭选择器
+            todayHighlight: true,  // 高亮当前日期
+            language: 'zh-CN',
+            clearBtn: true,  // 显示清除按钮
+            todayBtn: true,  // 显示今天按钮
+            startDate: today,
+            orientation: "auto"  // 自动调整弹出位置
+        });
+
+        // 点击图标时打开日期选择器
+        $dateIcon.on('click', function () {
+            $dateInput.datepicker('show');
+        });
+
+        // 处理模态框中的日期选择器
+        $('#createIssueModal').on('shown.bs.modal', function () {
+            $dateInput.datepicker('update');  // 更新日期选择器位置
+        });
+
+        // 可选：添加日期验证
+        $dateInput.on('changeDate', function (e) {
+            const selectedDate = e.date;
+            if (selectedDate < today) {
+                alert('请选择今天或之后的日期');
+                $dateInput.datepicker('update', '');  // 清空选择
+            }
+        });
+    }
+
+    function initTagSelect() {
+        $('.select2-tags').select2({
+            theme: 'bootstrap',
+            language: 'zh-CN',
+            placeholder: '至少添加一个标签',
+            allowClear: true,
+            tags: false,
+            maximumSelectionLength: 3,  // 最多选择3个标签
+            // 禁用搜索框
+            minimumResultsForSearch: Infinity,
+            // 禁用键盘输入
+            selectOnClose: false,
+            tokenSeparators: []
+
+        });
+
+        // 处理模态框关闭时清空选择
+        $('#createIssueModal').on('hidden.bs.modal', function () {
+            $('.select2-tags').val(null).trigger('change');
+        });
+    }
+
+</script>
 {% endblock %}

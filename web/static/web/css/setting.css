@@ -1,0 +1,186 @@
+.setting-wrapper {
+    display: flex;
+    gap: 30px;
+    margin-top: 30px;
+}
+
+/* 左侧菜单样式 */
+.left-menu {
+    width: 300px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    margin: 8px 0;
+    border-radius: 8px;
+    transition: all 0.3s;
+    cursor: pointer;
+    background: #f8f9fa;
+}
+
+.menu-item.active {
+    background: #e3f2fd;
+    border-left: 4px solid #2196F3;
+}
+
+.menu-item:hover:not(.active) {
+    background: #f1f1f1;
+}
+
+.menu-icon {
+    font-size: 20px;
+    width: 30px;
+    color: #607D8B;
+}
+
+/* 右侧内容区 */
+.right-content {
+    flex: 1;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    padding: 30px;
+}
+
+.content-section {
+    display: none;
+}
+
+.content-section.active {
+    display: block;
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/*响应式增强CSS */
+@media (max-width: 768px) {
+    .setting-wrapper {
+        flex-direction: column;
+    }
+
+    .left-menu {
+        width: 100%;
+    }
+
+    .menu-item h5 {
+        font-size: 1.1rem;
+    }
+
+    .menu-item small {
+        display: none;
+    }
+}
+
+
+/*项目管理列表样式*/
+.project-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.project-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    transition: all 0.3s ease;
+}
+
+.project-item:hover {
+    border-color: #4a90e2;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.project-info {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.project-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #4a90e2;
+    border-radius: 8px;
+    color: white;
+}
+
+.project-icon i {
+    font-size: 1.2rem;
+}
+
+.project-name {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.project-meta {
+    display: flex;
+    gap: 1.5rem;
+    color: #666;
+}
+
+.project-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.project-meta i {
+    color: #4a90e2;
+}
+
+.btn-outline-danger {
+    border-radius: 6px;
+    padding: 0.375rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.no-projects {
+    text-align: center;
+    padding: 3rem;
+    color: #666;
+}
+
+.no-projects i {
+    font-size: 3rem;
+    color: #ddd;
+    margin-bottom: 1rem;
+}
+
+.no-projects p {
+    margin: 0;
+    font-size: 1.1rem;
+}

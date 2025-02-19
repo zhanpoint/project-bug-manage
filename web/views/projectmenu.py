@@ -14,4 +14,4 @@ def statistic(request, project_id):
 
 
 def setting(request, project_id):
-    return render(request, 'web/setting.html/')
+    return render(request, 'web/projectsetting.html/')

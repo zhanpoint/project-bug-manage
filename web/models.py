@@ -1,5 +1,6 @@
 import uuid
 
+from django.core.exceptions import PermissionDenied
 from django.db import models
 from mptt.models import MPTTModel, TreeForeignKey
 
@@ -142,3 +143,91 @@ class FileRepository(MPTTModel):
 
     def __str__(self):
         return self.name
+
+
+class Issue(models.Model):
+    STATUS_CHOICES = [('new', '新建'), ('progress', '处理中'), ('resolved', '已解决'), ('closed', '已关闭')]
+    PRIORITY_CHOICES = [('low', '低'), ('medium', '中'), ('high', '高'), ('critical', '紧急')]
+    title = models.CharField(max_length=200, verbose_name="标题")
+    tags = models.ManyToManyField('IssueTag', verbose_name="标签", blank=True)
+    description = models.TextField(verbose_name="问题描述")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new', verbose_name="状态")
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', verbose_name="优先级")
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, verbose_name="所属项目")
+    creator = models.ForeignKey(UserInfo, related_name='created_issues', on_delete=models.CASCADE, verbose_name="创建者")
+    # ManyToManyField本身并不支持on_delete参数,删除行为由through模型或默认的删除规则处理
+    assignee = models.ManyToManyField(UserInfo, related_name='assigned_issues', blank=True,
+                                      verbose_name="分配给指定用户")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="更新时间")
+    due_date = models.DateTimeField(null=True, blank=True, verbose_name="截止日期")
+
+    # 索引优化
+    class Meta:
+        indexes = [
+            models.Index(fields=['status', 'priority']),  # 适用于同时过滤状态和优先级的查询
+            models.Index(fields=['created_at']),  # 适用于按创建时间排序或过滤的查询
+            # models.Index(fields=['tag']),  # 适用于按标签排序或过滤的查询
+        ]
+
+
+class IssueTag(models.Model):
+    TAGS = [
+        ('bug', 'bug'),
+        ('feature', '新功能'),
+        ('enhancement', '优化'),
+        ('documentation', '文档'),
+        ('other', '其他'),
+    ]
+    name = models.CharField(max_length=20, unique=True, choices=TAGS, verbose_name="标签名称")
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "问题标签"
+        verbose_name_plural = "问题标签"
+
+# class Comment(MPTTModel):
+#     issue = models.ForeignKey(Issue, related_name='comments', on_delete=models.CASCADE, verbose_name="问题")
+#     author = models.ForeignKey(UserInfo, on_delete=models.CASCADE, verbose_name="评论者")
+#     content = models.TextField(verbose_name="评论内容")
+#     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+#     parent = TreeForeignKey(
+#         'self',
+#         null=True,
+#         blank=True,
+#         on_delete=models.CASCADE,
+#         related_name='replies',
+#         verbose_name="父评论"
+#     )
+#
+#     # 设置评论为不可编辑
+#     def save(self, *args, **kwargs):
+#         if self.pk:  # 禁止更新已有评论
+#             raise PermissionDenied("评论不允许修改")
+#         super().save(*args, **kwargs)
+#
+#
+# class Notification(models.Model):
+#     """存储与问题（Issue表）相关的通知信息"""
+#     NOTIFICATION_TYPES = [
+#         ('status_change', '状态变更'),
+#         ('mention', '@提及'),
+#         ('comment', '新评论')
+#     ]
+#     # 表示哪个用户收到了关于哪个问题的通知
+#     user = models.ForeignKey(UserInfo, on_delete=models.CASCADE)
+#     issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
+#     # 通知类型
+#     notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+#     # 触发通知的用户, 可以为空，表示系统自动触发的通知(是不是只有@提及通知类型才不为空)
+#     triggered_by = models.ForeignKey(UserInfo, related_name='triggered_notifications', null=True,
+#                                      on_delete=models.SET_NULL)
+#     # 通知创建时间
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     # 是否已读
+#     is_read = models.BooleanField(default=False)
+#
+#     class Meta:
+#         ordering = ['-created_at']
