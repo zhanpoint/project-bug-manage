@@ -3,6 +3,7 @@ import uuid
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from mptt.models import MPTTModel, TreeForeignKey
+from django.db.models import F  # 使用F() 表达式来进行数据库字段的原子操作，避免并发问题。
 
 
 # 用户表
@@ -165,15 +166,16 @@ class Issue(models.Model):
     # 索引优化
     class Meta:
         indexes = [
+            # 添加标题的索引以提高搜索效率
+            models.Index(fields=['title']),
             models.Index(fields=['status', 'priority']),  # 适用于同时过滤状态和优先级的查询
             models.Index(fields=['created_at']),  # 适用于按创建时间排序或过滤的查询
-            # models.Index(fields=['tag']),  # 适用于按标签排序或过滤的查询
         ]
 
 
 class IssueTag(models.Model):
     TAGS = [
-        ('bug', 'bug'),
+        ('bug', 'Bug'),
         ('feature', '新功能'),
         ('enhancement', '优化'),
         ('documentation', '文档'),
@@ -188,27 +190,58 @@ class IssueTag(models.Model):
         verbose_name = "问题标签"
         verbose_name_plural = "问题标签"
 
-# class Comment(MPTTModel):
-#     issue = models.ForeignKey(Issue, related_name='comments', on_delete=models.CASCADE, verbose_name="问题")
-#     author = models.ForeignKey(UserInfo, on_delete=models.CASCADE, verbose_name="评论者")
-#     content = models.TextField(verbose_name="评论内容")
-#     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
-#     parent = TreeForeignKey(
-#         'self',
-#         null=True,
-#         blank=True,
-#         on_delete=models.CASCADE,
-#         related_name='replies',
-#         verbose_name="父评论"
-#     )
-#
-#     # 设置评论为不可编辑
-#     def save(self, *args, **kwargs):
-#         if self.pk:  # 禁止更新已有评论
-#             raise PermissionDenied("评论不允许修改")
-#         super().save(*args, **kwargs)
-#
-#
+
+class Comment(MPTTModel):
+    issue = models.ForeignKey(Issue, related_name='comments', on_delete=models.CASCADE, verbose_name="问题")
+    author = models.ForeignKey(UserInfo, on_delete=models.CASCADE, verbose_name="评论者")
+    content = models.TextField(verbose_name="评论内容", max_length=1000)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+    STATUS_CHOICES = [
+        ('normal', '正常'),
+        ('deleted', '已删除'),
+    ]
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='normal')
+    # 点赞数 (评论的点赞数量)
+    like_count = models.PositiveIntegerField(default=0)
+    # 踩数 (评论的踩数量)
+    dislike_count = models.PositiveIntegerField(default=0)
+    parent = TreeForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='replies',
+        verbose_name="父评论"
+    )
+
+    # 设置评论内容字段为不可编辑，其他字段可以编辑
+    def save(self, *args, **kwargs):
+        # 当 self.pk 存在时，表示该模型实例已经保存到数据库中，并且有一个唯一的主键值
+        if self.pk:  # 更新操作
+            # 获取数据库中的原始对象
+            original = Comment.objects.get(pk=self.pk)
+            # 只检查 content 字段是否被修改（self：当前的评论对象实例，表示正在保存的评论，original：原始的评论对象实例，表示从数据库中读取的、尚未修改的评论）
+            if original.content != self.content:
+                raise PermissionDenied("评论内容不允许修改")
+        super().save(*args, **kwargs)
+
+    class Meta:
+        ordering = ['like_count', '-created_at']  # 优先级排序
+        indexes = [
+            models.Index(fields=['created_at', 'status']),  # 组合索引
+        ]
+
+
+class UserCommentReaction(models.Model):
+    REACTION_CHOICES = [('like', '赞'), ('dislike', '踩')]
+
+    user = models.ForeignKey(UserInfo, on_delete=models.CASCADE)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='reactions')
+    reaction_type = models.CharField(max_length=7, choices=REACTION_CHOICES)
+
+    class Meta:
+        unique_together = ('user', 'comment')  # 确保每个用户对同条评论只能一个反应
+
 # class Notification(models.Model):
 #     """存储与问题（Issue表）相关的通知信息"""
 #     NOTIFICATION_TYPES = [

@@ -1,5 +1,14 @@
+/* 为问题列表添加边框和圆角 */
+.table {
+    margin-top: 20px;
+    border: 1px solid #3c3c3c; /* 添加边框 */
+    /* 添加圆角 */
+    border-radius: 5px;
+}
+
 .table td, .table th {
     vertical-align: middle;
+    border: none; /* 移除单元格的默认边框 */
 }
 
 .badge {
@@ -88,7 +97,7 @@
 /* 修改日期选择器图标样式 */
 .input-group-addon { /* 改用 input-group-addon 替代 input-group-text */
     cursor: pointer;
-    background-color: #fff;
+    background-color: #f8f9fa; /* 改为更柔和的背景色 */
 }
 
 .input-group-addon:hover {
@@ -97,7 +106,7 @@
 
 /* 确保图标垂直居中 */
 .input-group-addon i {
-    line-height: 1;
+    line-height: 1.5; /* 增加行高以提高可读性 */
 }
 
 /* 输入框组样式调整 */
@@ -121,51 +130,48 @@
 
 
 /* Select2 标签样式自定义 */
-.select2-container--bootstrap .select2-selection--multiple {
-    min-height: 34px; /* Bootstrap 3 默认输入框高度 */
-}
-
-.select2-container--bootstrap .select2-selection--multiple .select2-selection__choice {
-    background-color: #f8f9fa;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    padding: 2px 6px;
-    margin: 2px 4px 2px 0;
-    font-size: 14px;
-}
-
-.select2-container--bootstrap .select2-selection--multiple .select2-selection__choice__remove {
-    margin-right: 4px;
-    color: #999;
-    cursor: pointer;
-}
-
-.select2-container--bootstrap .select2-selection--multiple .select2-selection__choice__remove:hover {
-    color: #333;
-}
-
-/* 确保在模态框中正确显示 */
 .select2-container {
-    z-index: 1060;
+    z-index: 7777; /* 确保下拉列表显示在模态框上面 */
 }
 
-/* 隐藏搜索框 */
-.select2-search--dropdown {
-    display: none;
+/* 调整在模态框中的select2样式 */
+.select2-container--bootstrap .select2-selection {
+    border-radius: 4px;
 }
 
-/* 调整下拉选项样式 */
-.select2-results__option {
-    padding: 6px 12px;
-    cursor: pointer;
+
+/* 修改优先级自定义标签样式 */
+.label {
+    display: inline-block; /* 改为行内块 */
+    padding: 0; /* 去掉内边距 */
+    font-size: 90%; /* 缩小字体 */
+    font-weight: 600; /* 加粗 */
+    line-height: 1.7; /* 行高 */
+    text-align: center; /* 水平居中 */
+    vertical-align: middle; /* 垂直居中 */
+    border-radius: 40%; /* 圆形 */
+    width: 25px; /* 设置宽度 */
+    height: 25px; /* 设置高度 */
+    margin-right: 5px; /* 右边距 */
 }
 
-.select2-results__option:hover {
-    background-color: #f8f9fa;
+/* 颜色样式 */
+.label-danger {
+    background-color: #d9534f;
+    border: 1px solid black;
 }
 
-/* 选中项样式 */
-.select2-results__option[aria-selected="true"] {
-    background-color: #e9ecef !important;
-    color: #495057;
+.label-warning {
+    background-color: #f0ad4e;
+    border: 1px solid black;
+}
+
+.label-info {
+    background-color: #5bc0de;
+    border: 1px solid black;
+}
+
+.label-default {
+    background-color: #777;
+    border: 1px solid black;
 }

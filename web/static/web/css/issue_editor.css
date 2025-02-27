@@ -1,0 +1,282 @@
+.form-row > .form-group {
+    padding-right: 5px;
+    padding-left: 5px;
+}
+
+
+/* 修改日期选择器图标样式 */
+.input-group-addon { /* 改用 input-group-addon 替代 input-group-text */
+    cursor: pointer;
+    background-color: #f8f9fa; /* 改为更柔和的背景色 */
+}
+
+.input-group-addon:hover {
+    background-color: #f8f9fa;
+}
+
+/* 确保图标垂直居中 */
+.input-group-addon i {
+    line-height: 1.5; /* 增加行高以提高可读性 */
+}
+
+/* 输入框组样式调整 */
+.input-group {
+    width: 100%;
+}
+
+/* 日期输入框样式 */
+.input-group .form-control {
+    border-right: 0;
+}
+
+.input-group .input-group-addon {
+    border-left: 0;
+}
+
+/* 确保日期选择器下拉框位置正确 */
+.datepicker {
+    z-index: 1060 !important; /* 确保在模态框中正确显示 */
+}
+
+
+/* Select2 标签样式自定义 */
+.select2-container--bootstrap {
+    display: block;
+    width: 100% !important; /* 确保宽度100% */
+}
+
+.select2-container--bootstrap .select2-selection--multiple {
+    min-height: 34px !important;
+    max-height: 34px !important;
+    border: 1px solid #ccc;
+}
+
+.select2-container--bootstrap .select2-selection--multiple .select2-selection__rendered {
+    display: block !important;
+    padding: 1px 5px !important;
+    margin: 0 !important;
+    line-height: 1.428571429 !important;
+    white-space: normal !important;
+    /*line-height: 30px; !* 调整行高以适应 Bootstrap 3.4.1 *!*/
+}
+
+.select2-container--bootstrap .select2-selection--multiple .select2-selection__choice {
+    float: left !important;
+    margin: 2px 2px !important;
+    padding: 2px 6px !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    background-color: #f5f5f5 !important;
+    border: 1px solid #ccc !important;
+    border-radius: 3px !important;
+    cursor: default !important;
+}
+
+/* 调整搜索框位置 */
+.select2-container--bootstrap .select2-search--inline {
+    float: left !important;
+    margin-top: 2px !important;
+}
+
+.select2-container--bootstrap .select2-search--inline .select2-search__field {
+    padding: 1px 0 !important;
+    margin: 0 !important;
+    min-height: 26px !important;
+    height: auto !important;
+}
+
+.select2-container--bootstrap .select2-selection--multiple .select2-search--inline {
+    margin: 0;
+    padding: 0;
+    line-height: 30px;
+}
+
+.select2-container--bootstrap .select2-selection--multiple .select2-search--inline .select2-search__field {
+    margin: 0;
+    padding: 0 5px;
+    min-height: 32px;
+    height: 32px;
+}
+
+/* 确保下拉框样式与 Bootstrap 3.4.1 一致 */
+.select2-container--bootstrap .select2-dropdown {
+    border-color: #66afe9;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .075);
+}
+
+/* 移除不必要的内边距和外边距 */
+.select2-container--bootstrap .select2-selection {
+    margin: 0;
+    padding: 0;
+}
+
+/* 修复选择框的高度 */
+.form-group .select2-container--bootstrap {
+    height: 34px !important;
+}
+
+/* 下拉选项样式 */
+.select2-container--bootstrap .select2-results > .select2-results__options {
+    max-height: 200px;
+    overflow-y: auto;
+}
+/* --------------------------------------------------------------------------------------- */
+
+/* 修改badge相关样式为label（优先级） */
+.label {
+    display: inline-block; /* 改为行内块 */
+    padding: 0; /* 去掉内边距 */
+    font-size: 90%; /* 缩小字体 */
+    font-weight: 600; /* 加粗 */
+    line-height: 1.7; /* 行高 */
+    text-align: center; /* 水平居中 */
+    vertical-align: middle; /* 垂直居中 */
+    border-radius: 40%; /* 圆形 */
+    width: 25px; /* 设置宽度 */
+    height: 25px; /* 设置高度 */
+    margin-right: 5px; /* 右边距 */
+}
+
+/* 颜色样式 */
+.label-danger {
+    background-color: #d9534f;
+    border: 1px solid black;
+}
+
+.label-warning {
+    background-color: #f0ad4e;
+    border: 1px solid black;
+}
+
+.label-info {
+    background-color: #5bc0de;
+    border: 1px solid black;
+}
+
+.label-default {
+    background-color: #777;
+    border: 1px solid black;
+}
+
+
+/* 评论树形结构 */
+.comment-tree .card {
+    border: 1px solid #303030;
+    border-radius: 8px;
+    background-color: #faf2cc;
+
+}
+
+.comment-tree .reaction-buttons {
+    background-color: #faf2cc;
+}
+
+
+.reply-btn {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.reply-btn:hover {
+    color: #0d6efd;
+    text-decoration: underline;
+}
+
+
+/* 评论表单样式 */
+.comment-section {
+    margin-top: 2rem;
+    border-top: 1px solid #dee2e6;
+    padding-top: 1rem;
+}
+
+.comment-content {
+    resize: vertical;
+    min-height: 100px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.comment-operate-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.comment-operate-l {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.comment-operate-l em {
+    font-style: normal;
+    font-weight: bold;
+    color: #495057;
+}
+
+.comment-operate-r {
+    display: flex;
+    align-items: center;
+}
+
+.btn-comment {
+    padding: 6px 20px;
+    border-radius: 4px;
+}
+
+.comment-tree .reaction-buttons .btn {
+    margin-bottom: 0 !important;
+}
+
+/* 字数提示颜色变化 */
+.tip.text-warning em {
+    color: #ffc107;
+}
+
+.tip.text-danger em {
+    color: #dc3545;
+}
+
+
+/* 点赞踩反应按钮样式 */
+.reaction-buttons {
+    margin-left: auto;
+}
+
+.reaction-buttons .btn {
+    min-width: 65px;
+    transition: all 0.2s;
+}
+
+.reaction-buttons .btn.active {
+    transform: scale(1.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.reaction-buttons .btn:hover:not(.active) {
+    transform: translateY(-2px);
+}
+
+.reaction-buttons .count {
+    margin-left: 5px;
+    font-weight: 500;
+}
+
+
+/* 添加评论字数提示样式 */
+.form-text {
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+}
+
+.form-text.text-danger {
+    color: #dc3545;
+}
+
+#remainingChars {
+    font-weight: bold;
+}

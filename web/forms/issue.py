@@ -1,10 +1,10 @@
 from django import forms
 from django.utils import timezone
+from web.forms import bootstrap
+from web.models import Issue, IssueTag
 
-from web.models import Issue
 
-
-class IssueModelForm(forms.ModelForm):
+class IssueModelForm(bootstrap.BootstrapForm, forms.ModelForm):
     class Meta:
         model = Issue
         fields = ['title', 'tags', 'description', 'status', 'priority', 'assignee', 'due_date']

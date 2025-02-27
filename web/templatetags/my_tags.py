@@ -27,3 +27,6 @@ def project_manage_menu(request):
         if request.path_info.startswith(item['url']):
             item['class'] = 'active'
     return {'data_list': data_list}
+
+
+

@@ -1,18 +1,21 @@
 {% extends 'templates/base/manage_center.html' %}
 {% load static %}
+{% load bootstrap_pagination %}
+{% load priority_tags %}
+
 
 {% block css %}
-<link rel="stylesheet" href="{% static 'web/css/issue.css' %}">
-<link rel="stylesheet" href="{% static 'plugin/fontawesome-free-5.15.4-web/css/all.min.css' %}">
-<!--引入编辑器插件样式--->
-<link rel="stylesheet" href="{% static 'plugin/editor.md-master/css/editormd.min.css' %}" />'
-<!--引入bootstrap-select插件样式--->
-<link rel="stylesheet" href="{% static 'plugin/bootstrap-select/bootstrap-select.min.css' %}" />
-<!--引入bootstrap-datepicker插件样式--->
-<link rel="stylesheet" href="{% static 'plugin/bootstrap-datepicker/bootstrap-datepicker.min.css' %}" />
-<!--引入select2插件样式--->
-<link href="{% static 'plugin/select2/css/select2.min.css' %}" rel="stylesheet">
-<link href="{% static 'plugin/select2/css/select2-bootstrap.min.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'plugin/fontawesome-free-5.15.4-web/css/all.min.css' %}">
+    <!--引入编辑器插件样式--->
+    <link rel="stylesheet" href="{% static 'plugin/editor.md-master/css/editormd.min.css' %}" />'
+    <!--引入bootstrap-select插件样式--->
+    <link rel="stylesheet" href="{% static 'plugin/bootstrap-select/bootstrap-select.min.css' %}" />
+    <!--引入bootstrap-datepicker插件样式--->
+    <link rel="stylesheet" href="{% static 'plugin/bootstrap-datepicker/bootstrap-datepicker.min.css' %}" />
+    <!--引入select2插件样式--->
+    <link href="{% static 'plugin/select2/css/select2.min.css' %}" rel="stylesheet">
+    <link href="{% static 'plugin/select2/css/select2-bootstrap.min.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'web/css/issue.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -63,12 +66,11 @@
                     <div class="col-md-2">
                         <div class="form-group mb-0">
                             <label>优先级</label>
-                            <select class="form-control">
-                                <option value=""></option>
-                                <option value="critical">紧急</option>
-                                <option value="high">高</option>
-                                <option value="medium">中</option>
-                                <option value="low">低</option>
+                            <select class="selectpicker form-control" data-live-search="true" data-style="btn-light"
+                                data-show-content="true">
+                                {% for value, label in form.priority.field.choices %}
+                                {% priority_option value label %}
+                                {% endfor %}
                             </select>
                         </div>
                     </div>
@@ -119,43 +121,42 @@
                         <th>状态</th>
                         <th>优先级</th>
                         <th>创建者</th>
-                        <th>创建时间</th>
+                        <th>更新时间</th>
                         <th>截止日期</th>
                         <th>操作</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for issue in issues %}
+                    {% for issue in page_obj %}
                     <tr>
                         <td>
-                            <a href="{% url 'issue_detail' issue.id %}">{{ issue.title }}</a>
+                            <a>{{ issue.title }}</a>
                         </td>
                         <td>
-                            <span class="badge {% if issue.status == 'new' %}badge-info
-                                                 {% elif issue.status == 'progress' %}badge-warning
-                                                 {% elif issue.status == 'resolved' %}badge-success
-                                                 {% else %}badge-secondary{% endif %}">
+                            <span>
                                 {{ issue.get_status_display }}
                             </span>
                         </td>
                         <td>
-                            <span class="badge {% if issue.priority == 'critical' %}badge-danger
-                                                 {% elif issue.priority == 'high' %}badge-warning
-                                                 {% elif issue.priority == 'medium' %}badge-info
-                                                 {% else %}badge-secondary{% endif %}">
+                            <span class="label
+                                {% if issue.priority == 'low' %}label-default
+                                {% elif issue.priority == 'medium' %}label-info
+                                {% elif issue.priority == 'high' %}label-warning
+                                {% else %}label-danger
+                                {% endif %}">
                                 {{ issue.get_priority_display }}
                             </span>
                         </td>
                         <td>{{ issue.creator.username }}</td>
-                        <td>{{ issue.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>{{ issue.updated_at|date:"Y-m-d" }}</td>
                         <td>{{ issue.due_date|date:"Y-m-d" }}</td>
                         <td>
                             <div class="btn-group">
-                                <button type="button" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-edit"></i>
+                                <button type="button" class="btn btn-sm">
+                                    <a href="{% url 'web:issue_editor' project_id=request.bugtracer.project.id issue_id=issue.id %}"><i class="fas fa-edit"></i>编辑</a>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger">
-                                    <i class="fas fa-trash"></i>
+                                <button type="button" class="btn btn-sm delete-issue" data-issue-id="{{ issue.id }}">
+                                   <i class="fas fa-trash-alt" style="color: #c12e2a"></i>删除
                                 </button>
                             </div>
                         </td>
@@ -168,36 +169,13 @@
 
     <!-- 分页控件 -->
     <div class="d-flex justify-content-between align-items-center mt-4">
-        <div class="form-inline">
-            <label class="mr-2">每页显示：</label>
-            <select class="form-control form-control-sm">
-                <option>10</option>
-                <option>20</option>
-                <option>50</option>
-            </select>
-        </div>
-
         <nav>
-            <ul class="pagination mb-0">
-                <li class="page-item {% if not issues.has_previous %}disabled{% endif %}">
-                    <a class="page-link" href="?page={{ issues.previous_page_number }}">上一页</a>
-                </li>
-
-                {% for num in issues.paginator.page_range %}
-                <li class="page-item {% if issues.number == num %}active{% endif %}">
-                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                </li>
-                {% endfor %}
-
-                <li class="page-item {% if not issues.has_next %}disabled{% endif %}">
-                    <a class="page-link" href="?page={{ issues.next_page_number }}">下一页</a>
-                </li>
-            </ul>
+             {% bootstrap_paginate page_obj range=1 show_prev_next="true" previous_label="上一页" next_label="下一页" show_first_last="true" first_label="第一页" last_label="最后一页" %}
         </nav>
     </div>
 </div>
 <!-- 新建问题模态框 -->
-<div class="modal fade" id="createIssueModal" tabindex="-1" role="dialog" aria-labelledby="createIssueModalLabel"
+<div class="modal fade" style="z-index: 6666" id="createIssueModal" tabindex="-1" role="dialog" aria-labelledby="createIssueModalLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -210,17 +188,20 @@
             <form id="createIssueForm" method="post">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="id_title">标题</label>
-                        <input type="text" class="form-control" id="id_title" name="title" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="id_tags">标签</label>
-                        <select class="form-control select2-tags" id="id_tags" name="tags" multiple>
-                            {% for tag in form.tags.field.choices %}
-                                <option value="{{ tag.0 }}">{{ tag.1 }}</option>
-                            {% endfor %}
-                        </select>
+                    <div class="form-row">
+                        <div class="form-group col-md-7">
+                            <label for="id_title">标题</label>
+                            <input type="text" class="form-control" id="id_title" name="title" required>
+                        </div>
+                        <div class="form-group col-md-5">
+                            <label for="id_tags">标签</label>
+                            <select class="form-control select2-multi" id="id_tags" name="tags" multiple>
+                                <!-- form.tags是一个ModelMultipleChoiceField，其choices实际上是IssueTag对象的列表，而不是直接的TAGS选项 -->
+                                {% for tag in form.tags.field.queryset %}
+                                    <option value="{{ tag.id }}">{{ tag.get_name_display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="id_description">问题描述</label>
@@ -234,7 +215,7 @@
                             <select class="selectpicker form-control" data-live-search="true" id="id_status"
                                 name="status">
                                 {% for value, label in form.status.field.choices %}
-                                <option value="{{ value }}">{{ label }}</option>
+                                <option value="{{ value }}" style="color: #0F192A">{{ label }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -242,9 +223,9 @@
                         <div class="form-group col-md-4">
                             <label for="id_priority">优先级</label>
                             <select class="selectpicker form-control" data-live-search="true" id="id_priority"
-                                name="priority">
+                                name="priority" data-style="btn-light" data-show-content="true">
                                 {% for value, label in form.priority.field.choices %}
-                                <option value="{{ value }}">{{ label }}</option>
+                                {% priority_option value label %}
                                 {% endfor %}
                             </select>
                         </div>
@@ -273,7 +254,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="submit_creat_issue">创建</button>
+                    <button type="button" class="btn btn-primary" id="submit_create_issue">创建</button>
                 </div>
             </form>
         </div>
@@ -291,62 +272,80 @@
 <script>
     // 项目文档资源上传的URL
     const wiki_upload_url = "{% url 'web:wiki_upload' project_id=request.bugtracer.project.id %}";
+
     $(document).ready(function () {
         // 初始化模态框显示事件
         initCreateIssueModal()
         // 处理新建问题表单提交
         createIssueSubmit();
+        // 处理删除问题
+        deleteIssue();
+        // 初始化搜索功能
+        initSearch();
         // 初始化日期选择器
         initDatePicker();
     });
 
     function initCreateIssueModal() {
-        // 初始化Select2标签选择器
-        initTagSelect();
+        let isEditorInitialized = false; // 标记编辑器是否已初始化
+        let isSelect2Initialized = false; // 标记Select2是否已初始化
 
         // 初始化模态框显示事件
         $('#createIssueModal').on('shown.bs.modal', function () {
-            // 确保在模态框完全显示后再初始化编辑器
-            setTimeout(function () {
-                initEditorMd();
-            }, 100);
+            // 确保在模态框完全显示后再初始化编辑器和选择器、
+            requestAnimationFrame(() => {  // 使用requestAnimationFrame确保在浏览器重绘之后再执行代码
+                if (!isEditorInitialized && $('#editormd').length > 0) {
+                    initEditorMd();
+                }
+                if (!isSelect2Initialized && $('.select2-multi').length > 0) {
+                    initSelectMulti();
+                }
+
+                // 初始化Bootstrap Select
+                initSelectPicker();
+
+                // 在窗口大小改变或动态内容加载后调用，以确保 select2 组件能够正确调整其宽度和布局
+                $(window).trigger('resize.select2');
+            });
         });
 
         // 处理模态框隐藏事件
         $('#createIssueModal').on('hidden.bs.modal', function () {
-            // 销毁编辑器实例
-            if (editor && editor.destroy) {
-                editor.destroy();
+            // 销毁编辑器并置空
+            if (editorMd){
+                editorMd.clear();
+                editorMd.destroy();
+                isEditorInitialized = false;
             }
+            // 清理Select2实例
+            if (selectmulti) {
+                selectmulti.value = null;
+                selectmulti.select2('destroy');
+                isSelect2Initialized = false;
+            }
+            // 清理Bootstrap Select
+            $('.selectpicker').selectpicker('deselectAll');
+            $('.selectpicker').selectpicker('destroy');
+            // 清理datepicker
+            {#$('#id_due_date').datepicker('clearDates');#}
+            {#$('.id_due_date').datepicker('destroy');#}
+
             // 重置表单
             $('#createIssueForm')[0].reset();
-            $('.select2-tags').val(null).trigger('change');
-        });
-    }
+            // 清除错误提示和is-invalid类
+            $('.error-message').remove();
+            $('.is-invalid').removeClass('is-invalid');
 
-    let editor; // 声明一个全局变量来存储编辑器实例
-
-    function initEditorMd() {
-        // 初始化编辑器并保存实例
-        editor = editormd("editormd", {
-            placeholder: "请输入内容",
-            width: "100%",
-            height: 240,
-            // 引用Editor.md插件所需的静态资源文件的路径，默认是当前路径下的lib文件夹
-            path: "{% static 'plugin/editor.md-master/lib/' %}",
-            imageUpload: true,  // 开启本地图片上传功能
-            imageFormats: ["jpg", "jpeg", "gif", "png", "bmp", "webp"],  // 允许上传的图片格式
-            imageUploadURL: wiki_upload_url,  // 图片上传的url地址
         });
     }
 
     function createIssueSubmit() {
-        $('#submit_creat_issue').on('click', function () {
+        $('#submit_create_issue').on('click', function () {
             // 获取表单数据
             let formData = new FormData($('#createIssueForm')[0]);
 
             // 获取选中的标签
-            let selectedTags = $('.select2-tags').val();
+            let selectedTags = $('#id_tags').val();
             // 清除之前的tags
             formData.delete('tags');
             // 添加每个选中的tag
@@ -361,10 +360,6 @@
                 formData.set('description', editor.getMarkdown());
             }
 
-            // 清除之前的错误提示
-            $('.error-message').remove();
-            $('.is-invalid').removeClass('is-invalid');
-
             $.ajax({
                 url: "{% url 'web:issue_create' project_id=request.bugtracer.project.id %}",  // 需要在urls.py中定义此URL
                 type: 'POST',
@@ -374,6 +369,7 @@
                 contentType: false,  // 默认情况下，jQuery 会设置 Content-Type，当使用 FormData 时浏览器会自动设置为 multipart/form-data
                 success: function (response) {
                     if (response.status) {
+                        alert('true')
                         let modal = $('#createIssueModal');
                         // 创建成功
                         modal.modal('hide');
@@ -404,6 +400,24 @@
         });
     }
 
+    let editorMd;
+    function initEditorMd() {
+        // 初始化编辑器并保存实例
+        editorMd = editormd("editormd", {
+            placeholder: "请输入内容",
+            width: "100%",
+            height: 240,
+            // 引用Editor.md插件所需的静态资源文件的路径，默认是当前路径下的lib文件夹
+            path: "{% static 'plugin/editor.md-master/lib/' %}",
+            imageUpload: true,  // 开启本地图片上传功能
+            imageFormats: ["jpg", "jpeg", "gif", "png"],  // 允许上传的图片格式
+            imageUploadURL: wiki_upload_url,  // 图片上传的url地址
+            onload: function () {
+                isEditorInitialized = true;
+            }
+        });
+    }
+
     function initDatePicker() {
         const $dateInput = $('#id_due_date');
         const $dateIcon = $dateInput.closest('.input-group').find('.input-group-addon');
@@ -428,43 +442,166 @@
         $dateIcon.on('click', function () {
             $dateInput.datepicker('show');
         });
-
-        // 处理模态框中的日期选择器
-        $('#createIssueModal').on('shown.bs.modal', function () {
-            $dateInput.datepicker('update');  // 更新日期选择器位置
-        });
-
-        // 可选：添加日期验证
-        $dateInput.on('changeDate', function (e) {
-            const selectedDate = e.date;
-            if (selectedDate < today) {
-                alert('请选择今天或之后的日期');
-                $dateInput.datepicker('update', '');  // 清空选择
-            }
-        });
     }
 
-    function initTagSelect() {
-        $('.select2-tags').select2({
+    let selectmulti;
+    function initSelectMulti() {
+        selectmulti = $('.select2-multi').select2({
             theme: 'bootstrap',
-            language: 'zh-CN',
+            language: 'zh-CN',  // 中文支持
             placeholder: '至少添加一个标签',
-            allowClear: true,
-            tags: false,
+            dropdownParent: $('#createIssueModal'), // 设置下拉框的父容器为模态框
             maximumSelectionLength: 3,  // 最多选择3个标签
-            // 禁用搜索框
-            minimumResultsForSearch: Infinity,
-            // 禁用键盘输入
-            selectOnClose: false,
-            tokenSeparators: []
-
+            width: '100%',  // 设置宽度为100%
         });
+        isSelect2Initialized = true;
+    }
 
-        // 处理模态框关闭时清空选择
-        $('#createIssueModal').on('hidden.bs.modal', function () {
-            $('.select2-tags').val(null).trigger('change');
+    function initSelectPicker(){
+        $('.selectpicker').selectpicker({
+            iconBase: 'fas',  // 设置图标库为fas
+            tickIcon: 'fa-check',  // 设置勾选图标为fa-check
+            showTick: true,  // 显示勾选图标
+            showContent: true,  // 显示内容
         });
     }
+
+    function deleteIssue() {
+        // 处理删除问题
+       $('.table tbody').on('click', '.delete-issue', function() {
+            if (!confirm('确定要删除这个问题吗？')) {
+                return;
+            }
+
+            const issueId = $(this).data('issue-id');
+
+            $.ajax({
+                url: "{% url 'web:issue_delete' project_id=request.bugtracer.project.id issue_id=0 %}".replace('0', issueId),
+                type: 'POST',
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.status) {
+                        alert(response.message);
+                        // 刷新页面
+                        location.reload();
+                    } else {
+                        alert(response.message || '删除失败');
+                    }
+                },
+                error: function() {
+                    alert('服务器错误，请稍后重试');
+                }
+            });
+        });
+    }
+
+    function initSearch() {
+        let searchTimeout;  // 定时器对象
+        const $searchInput = $('#searchInput');  // 搜索输入框
+        const $issueTable = $('.table tbody');  // 问题表格
+
+        // 保存原始的问题列表HTML，用于恢复显示
+        const originalTableContent = $issueTable.html();
+
+        $searchInput.on('input', function() {
+            // 清除之前的定时器
+            clearTimeout(searchTimeout);
+
+            // 设置新的定时器，延迟300ms执行搜索
+            searchTimeout = setTimeout(function() {
+                // 获取搜索词
+                const searchTerm = $searchInput.val().trim();
+
+                // 如果搜索词为空，刷新页面显示所有问题
+                if (!searchTerm) {
+                    $issueTable.html(originalTableContent);
+                    return;
+                }
+
+                // 发送搜索请求
+                $.ajax({
+                    url: "{% url 'web:issue_search' project_id=request.bugtracer.project.id %}",
+                    type: 'GET',
+                    data: {
+                        term: searchTerm  // 搜索词
+                    },
+                    success: function(response) {
+                        if (response.status) {
+                            // 清空现有表格内容
+                            $issueTable.empty();
+
+                            // 如果没有搜索结果
+                            if (response.data.length === 0) {
+                                // 显示提示信息
+                                $issueTable.append('<tr><td colspan="7" class="text-center">未找到匹配的问题</td></tr>');
+                                return;
+                            }
+
+                            // 添加搜索结果到表格
+                            response.data.forEach(function(issue) {
+                                const row = `
+                                    <tr>
+                                        <td><a>${issue.title}</a></td>
+                                        <td><span class="label ${getStatusClass(issue.status)}">${issue.status}</span></td>
+                                        <td><span class="label ${getPriorityClass(issue.priority)}">${issue.priority}</span></td>
+                                        <td>${issue.creator}</td>
+                                        <td>${issue.updated_at}</td>
+                                        <td>${issue.due_date}</td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-sm">
+                                                    <a href="{% url 'web:issue_editor' project_id=request.bugtracer.project.id issue_id=0 %}".replace('0', issue.id)>
+                                                        <i class="fas fa-edit"></i>编辑
+                                                    </a>
+                                                </button>
+                                                <button type="button" class="btn btn-sm delete-issue" data-issue-id="${issue.id}">
+                                                    <i class="fas fa-trash-alt" style="color: #c12e2a"></i>删除
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                                $issueTable.append(row);
+                            });
+
+                            // 重新绑定删除按钮事件
+                            {#deleteIssue();#}
+                        } else {
+                            alert(response.message || '搜索失败');
+                        }
+                    },
+                    error: function() {
+                        alert('搜索请求失败，请稍后重试');
+                    }
+                });
+            }, 300);  // 300ms的防抖延迟
+        });
+    }
+
+    // 获取状态对应的样式类
+    function getStatusClass(status) {
+        const statusClasses = {
+            '新建': 'label-info',
+            '处理中': 'label-warning',
+            '已解决': 'label-success',
+            '已关闭': 'label-secondary'
+        };
+        return statusClasses[status] || 'label-default';
+    }
+
+    // 获取优先级对应的样式类
+    function getPriorityClass(priority) {
+        const priorityClasses = {
+            '低': 'label-default',
+            '中': 'label-warning',
+            '高': 'label-danger',
+            '紧急': 'label-info'
+        };
+        return priorityClasses[priority] || 'label-default';
+    }
+
 
 </script>
 {% endblock %}

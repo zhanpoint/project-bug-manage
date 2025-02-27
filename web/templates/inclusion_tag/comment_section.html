@@ -1,0 +1,74 @@
+{% load comment_tags %}
+{% load mptt_tags %}
+
+{% recursetree comments %}
+    <div class="card mb-2" style="margin-left: {{ node.level|multiply:20 }}px;">
+        <div class="card-body" style="padding: 15px 0 0 15px; ">
+            <div class="media">
+
+                <div class="media-left">
+                    <span class="badge badge-light text-dark">{{ node.author.username }}</span>
+                </div>
+
+                <div class="media-body">
+                    <small class="text-muted">{{ node.created_at|date:"Y-m-d H:i" }}</small>
+
+                    {% if node.parent %}
+                        <small class="text-muted">回复 @{{ node.parent.author.username }}</small>
+                    {% endif %}
+
+                    <p class="mb-1">{{ node.content }}</p>
+
+                    <div class="btn-group">
+                        <button class="btn btn-link btn-sm reply-btn"
+                                style="font-size: 12px; padding-left: 0; color: #985f0d;"
+                                data-comment-id="{{ node.id }}"
+                                data-author="{{ node.author.username }}">
+                            <i class="far fa-comment"></i>回复
+                        </button>
+
+                        {# 点赞 #}
+                        <button class="reaction-buttons btn btn-sm like-btn
+                                  {% if user_reaction == 'like' %}active{% endif %}"
+                                data-comment-id="{{ node.id }}">
+                            <i class="far fa-thumbs-up"></i>
+                            <span class="count">{{ node.like_count }}</span>
+                        </button>
+                        {# 踩 #}
+                        <button class="reaction-buttons btn btn-sm dislike-btn
+                                     {% if user_reaction == 'dislike' %}active{% endif %}"
+                                data-comment-id="{{ node.id }}">
+                            <i class="far fa-thumbs-down"></i>
+                            <span class="count">{{ node.dislike_count }}</span>
+                        </button>
+
+                    </div>
+
+                    <!-- 回复表单 -->
+                    <div class="reply-form" style="display: none;" id="replyForm_{{ node.id }}">
+                        <form class="margin-top: 10px comment-form" data-parent-id="{{ node.id }}">
+                            {% csrf_token %}
+
+                            <div class="form-group">
+                                <textarea class="form-control comment-content" rows="2"
+                                          placeholder="回复 @{{ node.author.username }}"></textarea>
+                            </div>
+
+                            <div>
+                                <button type="submit" class="btn btn-primary btn-sm">提交回复</button>
+                                <button type="button" class="btn btn-default btn-sm cancel-reply">取消</button>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if not node.is_leaf_node %}
+        <div class="children">
+            {{ children }}
+        </div>
+    {% endif %}
+{% endrecursetree %}

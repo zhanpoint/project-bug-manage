@@ -144,7 +144,7 @@ class LoginNameForm(BootstrapForm, forms.Form):
                                    'required': '密码不能为空'}
                                )
     code = forms.CharField(label='验证码',
-                           validators=[RegexValidator(r'^[a-zA-Z]{6}$', '验证码格式错误'), ],
+                           validators=[RegexValidator(r'^[a-zA-Z]{2}$', '验证码格式错误'), ],
                            error_messages={
                                'required': '验证码不能为空'}
                            )

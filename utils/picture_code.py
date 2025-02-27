@@ -3,7 +3,7 @@ import random
 
 
 # 图片验证码由一些验证码+干扰点+干扰线+干扰圆圈组成
-def image_code(width=120, height=30, char_length=6, font_file='static/Monaco.ttf', font_size=25):
+def image_code(width=120, height=30, char_length=2, font_file='static/Monaco.ttf', font_size=25):
     code = []
     # 创建一个新图片
     img = Image.new(mode='RGB', color=(255, 255, 255), size=(width, height))

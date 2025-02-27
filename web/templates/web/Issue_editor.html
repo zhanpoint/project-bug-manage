@@ -1,0 +1,466 @@
+{% extends 'templates/base/manage_center.html' %}
+{% load static %}
+{% load priority_tags %}
+{% load widget_tweaks %}
+{% load comment_tags %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'plugin/fontawesome-free-5.15.4-web/css/all.min.css' %}">
+    <!--引入编辑器插件样式--->
+    <link rel="stylesheet" href="{% static 'plugin/editor.md-master/css/editormd.min.css' %}"/>'
+    <!--引入bootstrap-select插件样式--->
+    <link rel="stylesheet" href="{% static 'plugin/bootstrap-select/bootstrap-select.min.css' %}"/>
+    <!--引入bootstrap-datepicker插件样式--->
+    <link rel="stylesheet" href="{% static 'plugin/bootstrap-datepicker/bootstrap-datepicker.min.css' %}"/>
+    <!--引入select2插件样式--->
+    <link href="{% static 'plugin/select2/css/select2.min.css' %}" rel="stylesheet">
+    <link href="{% static 'plugin/select2/css/select2-bootstrap.min.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'web/css/issue_editor.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div>
+            <h2>编辑问题</h2>
+            <form id="editIssueForm" method="post">
+                {% csrf_token %}
+
+                <div class="form-row">
+                    <div class="form-group col-md-7">
+                        <label for="id_title">标题</label>
+                        {{ form.title|add_class:"form-control"|attr:"required:required" }}
+                    </div>
+                    <div class="form-group col-md-5">
+                        <label for="id_tags">标签</label>
+                        <select multiple class="form-control select2-tags" name="tags" id="id_tags">
+                            {% for tag in form.tags.field.queryset %}
+                                <option value="{{ tag.id }}"
+                                        {% if tag in form.instance.tags.all %}selected{% endif %}>
+                                    {{ tag.get_name_display }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_description">问题描述</label>
+                    <div id="editormd">
+                        {{ form.description|add_class:"form-control"|attr:"rows:4" }}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <label for="id_status">状态</label>
+                        {{ form.status|add_class:"selectpicker form-control"|attr:"data-live-search:true" }}
+                    </div>
+
+                    <div class="form-group col-md-3">
+                        <label for="id_priority">优先级</label>
+                        <select class="selectpicker form-control" name="priority" id="id_priority"
+                                data-live-search="true" data-style="btn-light" data-show-content="true">
+                            {% for value, label in form.priority.field.choices %}
+                                {% priority_option value label form.instance.priority %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group col-md-3">
+                        <label for="id_assignee">指派给</label>
+                        <select class="selectpicker form-control" name="assignee" id="id_assignee"
+                                data-live-search="true" multiple="multiple">
+                            {% for user in form.assignee.field.queryset %}
+                                <option value="{{ user.id }}"
+                                        {% if user in form.instance.assignee.all %}selected{% endif %}>
+                                    {{ user.username }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="id_due_date">截止日期</label>
+                        <div class="input-group">
+                            {{ form.due_date|add_class:"form-control"|attr:"autocomplete:off" }}
+                            <span class="input-group-addon">
+                                            <i class="fas fa-calendar-alt"></i>
+                                        </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <a href="{% url 'web:issue' project_id=request.bugtracer.project.id %}"
+                       class="btn btn-default">返回</a>
+                </div>
+            </form>
+        </div>
+
+        {# 新增评论区域 #}
+        <div class="comment-section mt-4">
+            <h3>评论</h3>
+
+            {# 评论区 #}
+            <div class="comment-tree">
+                {% comment_sections issue_obj %}
+            </div>
+
+            {# 评论表单 #}
+            <form id="commentForm" method="post"
+                  action="{% url 'web:issue_comment' project_id=request.bugtracer.project.id issue_id=issue_obj.id %}">
+                {% csrf_token %}
+                {# 存储父评论的id，用于嵌套评论系统中，帮助服务器识别评论的层级关系 #}
+                <input type="hidden" name="comment_parent" id="commentParent" value="">
+                <div class="form-group">
+                            <textarea name="comment_content"
+                                      id="comment_content" class="form-control comment-content" rows="2"
+                                      placeholder="请输入您的评论:"
+                                      maxlength="1000"></textarea>
+                    <div class="comment-operate-box">
+                        <div class="comment-operate-l">
+                            <span class="tip">还能输入<em id="remainingChars">1000</em>个字符</span>
+                        </div>
+                        <div class="comment-operate-r">
+                            <button type="submit" class="btn btn-primary btn-comment" style="padding:5px 10px">发表评论
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script src="{% static 'plugin/editor.md-master/editormd.min.js' %}"></script>
+    <script src="{% static 'plugin/bootstrap-select/bootstrap-select.min.js' %}"></script>
+    <script src="{% static 'plugin/bootstrap-datepicker/bootstrap-datepicker.min.js' %}"></script>
+    <script src="{% static 'plugin/select2/js/select2.min.js' %}"></script>
+    <script src="{% static 'plugin/select2/js/i18n/zh-CN.js' %}"></script>
+    <script>
+        // 项目文档资源上传的URL
+        const wiki_upload_url = "{% url 'web:wiki_upload' project_id=request.bugtracer.project.id %}";
+        $(document).ready(function () {
+            // 编辑问题表单提交
+            editorIssueSubmit();
+            // 初始化日期选择器
+            initDatePicker();
+            // 初始化 bootstrap-select
+            initBootstrapSelect();
+            // 初始化Select2标签选择器
+            initTagSelect();
+            // 初始化编辑器
+            initEditorMd();
+            // 评论回复按钮点击事件
+            initCommentReply();
+            // 评论提交表单
+            initCommentSubmit();
+            // 初始化评论点赞踩按钮
+            initReactionButtons();
+            // 监听评论输入框的输入事件
+            initMonitorCommentInput();
+        });
+
+
+        function editorIssueSubmit() {
+            $('#editIssueForm').on('submit', function (e) {
+                e.preventDefault();
+                $.ajax({
+                    url: "{% url 'web:issue_editor'  project_id=request.bugtracer.project.id issue_id=issue_obj.id %}",
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    success: function (response) {
+                        if (response.status) {
+                            alert('问题更新成功！');
+                            location.reload();
+                        } else {
+                            alert('更新失败：' + JSON.stringify(response.errors));
+                        }
+                    },
+                    error: function () {
+                        alert('更新失败，请重试');
+                    }
+                });
+            });
+        }
+
+        function initDatePicker() {
+            const $dateInput = $('#id_due_date');
+            const $dateIcon = $dateInput.closest('.input-group').find('.input-group-addon');
+
+            // 获取今天的日期
+            const today = new Date();
+            // 设置时间为当天的 24:59:59，确保包含今天
+            today.setHours(0, 0, 0, 0);
+
+            $dateInput.datepicker({
+                format: 'yyyy-mm-dd',  // 日期格式为年-月-日
+                autoclose: true,  // 选择日期后自动关闭选择器
+                todayHighlight: true,  // 高亮当前日期
+                language: 'zh-CN',
+                clearBtn: true,  // 显示清除按钮
+                todayBtn: true,  // 显示今天按钮
+                startDate: today,
+                orientation: "auto"  // 自动调整弹出位置
+            });
+
+            // 点击图标时打开日期选择器
+            $dateIcon.on('click', function () {
+                $dateInput.datepicker('show');
+            });
+
+        }
+
+        function initBootstrapSelect() {
+            $('.selectpicker').selectpicker({
+                iconBase: 'fas',  // 设置图标库为fas
+                tickIcon: 'fa-check',  // 设置勾选图标为fa-check
+                showTick: true,  // 显示勾选图标
+                showContent: true,  // 显示内容
+            });
+        }
+
+        function initTagSelect() {
+            $('.select2-tags').select2({
+                theme: 'bootstrap',
+                language: 'zh-CN',
+                placeholder: '至少添加一个标签',
+                allowClear: true,
+                tags: false,
+                maximumSelectionLength: 3,  // 最多选择3个标签
+                // 禁用搜索框
+                minimumResultsForSearch: Infinity,
+                // 禁用键盘输入
+                selectOnClose: false,
+
+                width: '100%',  // 设置宽度为100%
+                containerCssClass: 'form-control',  // 添加Bootstrap的form-control类
+                dropdownCssClass: 'select2-bootstrap',  // 使用bootstrap主题样式
+
+                // 添加以下配置
+                templateResult: function(data) {
+                    if (!data.id) return data.text;
+                    return $('<span>' + data.text + '</span>');
+                },
+                templateSelection: function(data) {
+                    if (!data.id) return data.text;
+                    return $('<span>' + data.text + '</span>');
+                },
+                escapeMarkup: function(markup) {
+                    return markup;
+                },
+                // 确保选中的选项始终显示在顶部
+                sorter: function(data) {
+                    return data.sort(function(a, b) {
+                        if (a.selected && !b.selected) return -1;
+                        if (!a.selected && b.selected) return 1;
+                        return 0;
+                    });
+                }
+            });
+        }
+
+        function initEditorMd() {
+            // 初始化编辑器并保存实例
+            editormd("editormd", {
+                placeholder: "请输入内容",
+                width: "100%",
+                height: 240,
+                // 引用Editor.md插件所需的静态资源文件的路径，默认是当前路径下的lib文件夹
+                path: "{% static 'plugin/editor.md-master/lib/' %}",
+                imageUpload: true,  // 开启本地图片上传功能
+                imageFormats: ["jpg", "jpeg", "gif", "png",],  // 允许上传的图片格式
+                imageUploadURL: wiki_upload_url,  // 图片上传的url地址
+                toolbarAutoFixed: false,  // 禁用工具栏自动固定功能
+                // watch: false,  // 禁用实时预览功能
+                toolbarIcons: function () {
+                    return ["undo", "redo", "|",
+                        "bold", "del", "italic", "quote", "|",
+                        "list-ul", "list-ol", "hr", "|",
+                        "link", "image", "code", "code-block", "table", "datetime", "|",
+                        "preview", "clear", "|",
+                        "info",
+                    ];
+                },
+                onload: function () {
+                    this.previewing();  // 初始化完成后立即预览
+                }
+            });
+        }
+
+        function initCommentReply() {
+            // 处理回复按钮点击事件
+            $('.comment-tree').on('click', '.reply-btn', function() {
+                const commentId = $(this).data('comment-id');  // 获取父评论ID
+                const author = $(this).data('author');  // 获取父评论作者
+                $(`#replyForm_${commentId}`).slideToggle();  // 切换回复表单的显示状态
+                $('.reply-form').not(`#replyForm_${commentId}`).slideUp(); // 隐藏其他打开的回复表单
+            });
+
+            // 处理取消回复按钮
+            $('.comment-tree').on('click', '.cancel-reply', function() {
+                $(this).closest('.reply-form').slideUp();
+            });
+
+            // 处理评论提交
+            $('.comment-tree').on('submit', '.comment-form', function(e) {
+                e.preventDefault();
+                const form = $(this);
+                const parentId = form.data('parent-id');  // 获取父评论ID
+                const content = form.find('.comment-content').val();  // 获取评论内容
+
+                $.ajax({
+                    url: "{% url 'web:issue_comment' project_id=request.bugtracer.project.id issue_id=issue_obj.id %}",
+                    type: 'POST',
+                    data: {
+                        comment_parent: parentId,
+                        comment_content: content,
+                        csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                    },
+                    success: function(response) {
+                        if (response.status) {
+                            // 刷新评论区
+                            refreshComments();
+                            // 清空并隐藏回复表单
+                            form.find('.comment-content').val('');
+                            form.closest('.reply-form').slideUp();
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('评论提交失败，请重试');
+                    }
+                });
+            });
+        }
+
+        function initCommentSubmit() {
+            // 表单提交处理
+            $('#commentForm').on('submit', function (e) {
+                e.preventDefault();
+                const $form = $(this);
+                const $submitBtn = $form.find('button[type="submit"]');
+                const content = $('#comment_content').val().trim();
+
+
+                if (!content) {
+                    alert('评论内容不能为空');
+                    return;
+                }
+
+                // 禁用提交按钮防止重复提交
+                $submitBtn.prop('disabled', true);
+
+                $.ajax({
+                    url: $(this).attr('action'),
+                    type: 'POST',
+                    data: $form.serialize(),
+                    success: function (response) {
+                        if (response.status) {
+                            // 清空评论输入框
+                            $('#comment_content').val('');
+                            // 重置字数计数
+                            $('#remainingChars').text('1000');
+                            // 动态更新评论区
+                            refreshComments();
+
+                            alert('评论提交成功！');
+                        } else {
+                            alert(response.message || '评论失败，请重试');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        alert('评论失败，请重试');
+                    },
+                    complete: function () {
+                        // 启用提交按钮
+                        $submitBtn.prop('disabled', false);
+                    }
+                });
+            });
+        }
+
+        function initReactionButtons() {
+            // 处理点赞/踩按钮点击
+
+            // 使用事件委托为动态添加的元素绑定时间监听到父元素上，监听整个评论区中的按钮点击事件，如果点击的是点赞/踩按钮，则执行后续的操作
+            $('.comment-tree').on('click', '.reaction-buttons', function(e) {
+                e.preventDefault();
+                const $button = $(this);
+                const commentId = $button.data('comment-id');  // 获取评论ID
+                const reactionType = $button.hasClass('like-btn') ? 'like' : 'dislike';  // 获取点赞/踩类型
+
+                $.ajax({
+                    url: '{% url 'web:issue_comment' project_id=request.bugtracer.project.id issue_id=issue_obj.id %}',
+                    type: 'POST',
+                    data: {
+                        'reaction_type': reactionType,
+                        'comment_id': commentId,
+                        'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+                    },
+                    success: function(response) {
+                        if (response.status) {
+                            // 更新按钮状态（按下或选中时激活，有额外的视觉显示：不同的背景颜色、文字颜色或边框样式等）
+                            if (response.action === 'removed') {
+                                $button.removeClass('active');
+                            } else {
+                                $button.addClass('active')
+                                    .siblings('.reaction-buttons')
+                                    .removeClass('active');
+                            }
+
+                            // 更新计数
+                            $button.closest('.btn-group')
+                                .find('.like-btn .count')
+                                .text(response.like_count);
+                            $button.closest('.btn-group')
+                                .find('.dislike-btn .count')
+                                .text(response.dislike_count);
+                        }
+                    }
+                });
+            });
+        }
+
+        function initMonitorCommentInput() {
+            $('#comment_content').on('input', function () {
+                const maxLength = $(this).attr('maxlength');
+                const currentLength = $(this).val().length;
+                const remaining = maxLength - currentLength;
+                const $tip = $('.tip');
+                const $count = $('#remainingChars');
+
+                // 更新剩余字数
+                $count.text(remaining);
+
+                // 根据剩余字数改变提示颜色
+                if (remaining <= 100) {
+                    $tip.removeClass('text-warning').addClass('text-danger');
+                } else if (remaining <= 200) {
+                    $tip.removeClass('text-danger').addClass('text-warning');
+                } else {
+                    $tip.removeClass('text-warning text-danger');
+                }
+            });
+        }
+
+        // 刷新评论区域的函数
+        function refreshComments() {
+            $.ajax({
+                url: "{% url 'web:issue_comment' project_id=request.bugtracer.project.id issue_id=issue_obj.id %}",
+                type: 'GET',
+                success: function (response) {
+                    if (response.status) {
+                        // 更新评论列表
+                       $('.comment-tree').html(response.html);
+                    } else {
+                        alert(response.message || '刷新评论失败，请重试');
+                    }
+                }
+            });
+        }
+    </script>
+{% endblock %}

@@ -29,6 +29,10 @@ urlpatterns = [
         # issue相关功能
         re_path(r'^issue/$', issue.issue, name='issue'),
         re_path(r'^issue/create/$', issue.issue_create, name='issue_create'),
+        re_path(r'^issue/editor/(?P<issue_id>\d+)/$', issue.issue_editor, name='issue_editor'),
+        re_path(r'^issue/delete/(?P<issue_id>\d+)/$', issue.issue_delete, name='issue_delete'),
+        re_path(r'^issue/search/$', issue.issue_search, name='issue_search'),
+        re_path(r'^issue/comment/(?P<issue_id>\d+)/$', issue.issue_comment, name='issue_comment'),
 
         re_path(r'^statistic/$', projectmenu.statistic, name='statistic'),
         # wiki相关功能

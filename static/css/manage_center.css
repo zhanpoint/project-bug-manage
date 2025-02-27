@@ -1,10 +1,12 @@
 .navbar-default {
     background-color: rgb(46, 54, 67); /* 导航栏背景颜色 */
     border-color: #e7e7e7; /* 导航栏边框颜色 */
-    height: 60px;  /* 导航栏高度是border(1px)+padding(59px) */
+    height: 60px; /* 导航栏高度是border(1px)+padding(59px) */
     margin: 0;
+    z-index: 9999;
 }
-body{
+
+body {
     padding-top: 60px;
 }
 

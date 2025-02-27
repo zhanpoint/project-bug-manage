@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'web.apps.WebConfig',
     'mptt',
+    'bootstrap_pagination',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [
@@ -107,7 +109,7 @@ CACHES = {
     }
 }
 # 注意：如果是基于数据库的会话存储，只能使用数据库配置中的名为’default‘数据库
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_CACHE_ALIAS = 'default'  # 如果你使用的是基于缓存的会话存储，这将选择要使用的缓存。
 
 SESSION_COOKIE_NAME = "sessionid"  # 会话cookie的名称，默认值为sessionid
@@ -115,8 +117,8 @@ SESSION_COOKIE_PATH = "/"  # 这个路径决定了浏览器在哪些 URL 路径�
 SESSION_COOKIE_DOMAIN = None  # Session的cookie保存的域名
 SESSION_COOKIE_SECURE = False  # 是否支持Https传输cookie
 SESSION_COOKIE_HTTPONLY = True  # 是否只支持Http传输cookie
-SESSION_COOKIE_AGE = 1209600  # Session的cookie失效日期（默认2周）
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # 是否关闭浏览器使得Session过期
+SESSION_COOKIE_AGE = 1209600  # 设置session过期时间为2周（以秒为单位）
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # 关闭浏览器时不使session过期
 SESSION_SAVE_EVERY_REQUEST = True  # Django会在每次请求时更新会话的过期时间
 
 # Password validation
@@ -136,18 +138,21 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Internationalization
-# https://docs.djangoproject.com/en/1.11/topics/i18n/
-
+#
 LANGUAGE_CODE = 'zh-hans'
 
-TIME_ZONE = 'Asia/Shanghai'  # 确保设置为中国时区：中国使用的是东八区时区，通常表示为 Asia/Shanghai 或 UTC+8
+# 指定项目时区
+TIME_ZONE = 'Asia/Shanghai'
 
+# 不使用TIME_ZONE默认指定的时区（UTC）,而是自定义时区
+USE_TZ = False
+
+# 使用国际化功能
 USE_I18N = True
 
+# 使用本地化功能
 USE_L10N = True
 
-USE_TZ = False  # 使所有时间都以本地时间存储，如果你的应用需要处理多个时区的用户，建议保持 USE_TZ = True 并正确处理时区转换
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
@@ -183,7 +188,7 @@ WEB_WHITE_LIST = [
     'login/name/',
     'imagecode/',
     'sms/',
-    'index/'
+    'index/',
 ]
 WEB_WHITE_LIST = [prefix + i for i in WEB_WHITE_LIST]
 
@@ -195,6 +200,16 @@ Django从3.2版本开始引入了DEFAULT_AUTO_FIELD设置，默认是AutoField�
 修改DEFAULT_AUTO_FIELD后必须进行数据库迁移
 """
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# 确保CSRF设置正确
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:8004'  # Django开发服务器
+]
+# 允许跨域
+CORS_ALLOW_CREDENTIALS = True  # 允许携带凭证
+CORS_ORIGIN_WHITELIST = [
+    'http://127.0.0.1:8004'
+]
 
 try:
     from .local_settings import *
